@@ -81,16 +81,18 @@ def admin_page(current_user):
     """Trang admin để quản lý API keys"""
     return render_template('admin.html', username=current_user)
 
-# --- Khởi động ứng dụng ---
+# --- Đăng ký các blueprint ---
+# QUAN TRỌNG: Di chuyển việc đăng ký blueprint ra khỏi block if __name__ == '__main__':
 
 def register_blueprints(app):
     """Đăng ký các blueprint"""
     app.register_blueprint(api_app, url_prefix='/api')
 
+# Đăng ký các blueprint NGAY TẠI ĐÂY để đảm bảo luôn được thực thi
+register_blueprints(app)
+
+# --- Khởi động ứng dụng ---
 if __name__ == '__main__':
-    # Đăng ký các blueprint
-    register_blueprints(app)
-    
     # Lấy cấu hình từ biến môi trường
     port = int(os.environ.get("PORT", 5000))
     debug = os.environ.get("DEBUG", "False").lower() == "true"
