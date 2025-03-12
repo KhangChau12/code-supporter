@@ -68,6 +68,19 @@
                     <div class="alert">
                         <strong>Lưu ý:</strong> Hãy lưu lại các thông tin này ngay. API Secret sẽ không hiển thị lại sau khi bạn rời khỏi trang.
                     </div>
+                    
+                    <!-- Thêm phần giải thích về API Key và API Secret -->
+                    <div class="key-explanation">
+                        <h4>Cách sử dụng API Key</h4>
+                        <p>Khi tích hợp chatbot vào website, bạn chỉ cần dùng <strong>API Key</strong> (không cần API Secret). API Key được sử dụng để xác định nguồn gọi API và được đặt trong header <code>X-API-Key</code>.</p>
+                        
+                        <h4>API Key vs API Secret là gì?</h4>
+                        <ul>
+                            <li><strong>API Key</strong>: Là mã định danh công khai, dùng để xác định nguồn gọi API.</li>
+                            <li><strong>API Secret</strong>: Là mã bí mật, tương tự như mật khẩu, chỉ hiển thị một lần duy nhất. Hiện tại bạn không cần dùng API Secret, nhưng vẫn nên lưu trữ an toàn cho các tính năng bảo mật trong tương lai.</li>
+                        </ul>
+                    </div>
+                    
                     <div class="key-info">
                         <div class="key-field">
                             <label>API Key:</label>
@@ -97,31 +110,45 @@
                 <h2>Hướng dẫn tích hợp</h2>
                 <div class="integration-guide">
                     <h3>1. Thêm script vào trang web của bạn</h3>
-                    <pre><code>&lt;script src="{{ request.url_root }}static/js/codesupporter-widget.js"&gt;&lt;/script&gt;</code></pre>
+                    <pre><code>&lt;script src="{{ request.url_root }}static/js/codesupporter-widget.js"&gt;&lt;/script&gt;</code>
                     <button class="copy-button" data-target="code-snippet-1">
                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                             <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
                             <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
                         </svg>
-                    </button>
+                    </button></pre>
                     
                     <h3>2. Khởi tạo widget</h3>
                     <pre><code>&lt;script&gt;
 const chatbot = window.initCodeSupporter({
     apiUrl: '{{ request.url_root }}api/chat/public',
-    apiKey: 'YOUR_API_KEY_HERE',
+    apiKey: 'YOUR_API_KEY_HERE', // Thay thế bằng API Key của bạn
     position: 'bottom-right',
     theme: 'dark',
     chatTitle: 'Code Supporter',
     initialMessage: 'Xin chào! Tôi có thể giúp gì cho bạn với bài tập lập trình?'
 });
-&lt;/script&gt;</code></pre>
+&lt;/script&gt;</code>
                     <button class="copy-button" data-target="code-snippet-2">
                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                             <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
                             <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
                         </svg>
-                    </button>
+                    </button></pre>
+                    
+                    <!-- Thêm ví dụ đã điền API Key -->
+                    <h3>3. Cách sử dụng API Key của bạn</h3>
+                    <p>Sao chép API Key ở trên và thay thế 'YOUR_API_KEY_HERE' trong mã khởi tạo widget. Ví dụ:</p>
+                    <pre><code>// Giả sử API Key của bạn là: 36e22eb0-e1ad-44f0-a387-a408251cdbf2
+const chatbot = window.initCodeSupporter({
+    apiUrl: '{{ request.url_root }}api/chat/public',
+    apiKey: '36e22eb0-e1ad-44f0-a387-a408251cdbf2', // API Key của bạn
+    position: 'bottom-right',
+    theme: 'dark',
+    chatTitle: 'Code Supporter',
+    initialMessage: 'Xin chào! Tôi có thể giúp gì cho bạn với bài tập lập trình?'
+});
+</code></pre>
                 </div>
             </section>
         </main>
