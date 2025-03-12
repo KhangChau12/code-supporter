@@ -307,3 +307,42 @@ footer {
         gap: 10px;
     }
 }
+
+.nav-link {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    padding: 6px 12px;
+    border-radius: 6px;
+    color: var(--text-color);
+    text-decoration: none;
+    font-weight: 500;
+    transition: background-color 0.2s;
+}
+
+.nav-link:hover {
+    background-color: var(--input-bg);
+}
+
+.nav-text {
+    display: inline-block;
+    font-size: 14px;
+}
+
+/* Điều chỉnh user-info để hiển thị tốt hơn với nhiều nút */
+.user-info {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+/* Đáp ứng cho màn hình nhỏ */
+@media (max-width: 768px) {
+    .nav-text {
+        display: none;
+    }
+    
+    .nav-link {
+        padding: 6px;
+    }
+}
