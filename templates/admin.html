@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Code Supporter - Admin</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">
+</head>
+<body>
+    <div class="app-container">
+        <header class="app-header">
+            <div class="brand">
+                <h1>Code Supporter</h1>
+            </div>
+            <div class="user-info">
+                <span id="username-display">{{ username }}</span>
+                <button id="theme-toggle" aria-label="Toggle theme">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+                    </svg>
+                </button>
+                <a href="/chat" class="nav-link">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+                    </svg>
+                </a>
+                <button id="logout-button" aria-label="Log out">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                        <polyline points="16 17 21 12 16 7"></polyline>
+                        <line x1="21" y1="12" x2="9" y2="12"></line>
+                    </svg>
+                </button>
+            </div>
+        </header>
+        
+        <main class="admin-container">
+            <section class="admin-section">
+                <h2>Quản lý API Key</h2>
+                <p>Tạo và quản lý các API key để tích hợp Code Supporter vào trang web của bạn.</p>
+                
+                <div class="api-key-form">
+                    <h3>Tạo API Key mới</h3>
+                    <div class="form-group">
+                        <label for="api-key-name">Tên API Key</label>
+                        <input type="text" id="api-key-name" placeholder="Nhập tên để nhận diện API key này">
+                    </div>
+                    <div class="form-group">
+                        <label>Quyền hạn</label>
+                        <div class="checkbox-group">
+                            <label class="checkbox">
+                                <input type="checkbox" id="permission-chat" checked>
+                                <span>Chat API</span>
+                            </label>
+                            <label class="checkbox">
+                                <input type="checkbox" id="permission-stream">
+                                <span>Stream API</span>
+                            </label>
+                        </div>
+                    </div>
+                    <button id="create-api-key" class="primary-button">Tạo API Key</button>
+                </div>
+                
+                <div class="api-key-result" id="api-key-result" style="display:none;">
+                    <h3>API Key đã được tạo</h3>
+                    <div class="alert">
+                        <strong>Lưu ý:</strong> Hãy lưu lại các thông tin này ngay. API Secret sẽ không hiển thị lại sau khi bạn rời khỏi trang.
+                    </div>
+                    <div class="key-info">
+                        <div class="key-field">
+                            <label>API Key:</label>
+                            <div class="key-value" id="api-key-value"></div>
+                            <button class="copy-button" data-target="api-key-value">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                                </svg>
+                            </button>
+                        </div>
+                        <div class="key-field">
+                            <label>API Secret:</label>
+                            <div class="key-value" id="api-secret-value"></div>
+                            <button class="copy-button" data-target="api-secret-value">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+            
+            <section class="admin-section">
+                <h2>Hướng dẫn tích hợp</h2>
+                <div class="integration-guide">
+                    <h3>1. Thêm script vào trang web của bạn</h3>
+                    <pre><code>&lt;script src="{{ request.url_root }}static/js/codesupporter-widget.js"&gt;&lt;/script&gt;</code></pre>
+                    <button class="copy-button" data-target="code-snippet-1">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                        </svg>
+                    </button>
+                    
+                    <h3>2. Khởi tạo widget</h3>
+                    <pre><code>&lt;script&gt;
+const chatbot = window.initCodeSupporter({
+    apiUrl: '{{ request.url_root }}api/chat/public',
+    apiKey: 'YOUR_API_KEY_HERE',
+    position: 'bottom-right',
+    theme: 'dark',
+    chatTitle: 'Code Supporter',
+    initialMessage: 'Xin chào! Tôi có thể giúp gì cho bạn với bài tập lập trình?'
+});
+&lt;/script&gt;</code></pre>
+                    <button class="copy-button" data-target="code-snippet-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                        </svg>
+                    </button>
+                </div>
+            </section>
+        </main>
+    </div>
+    
+    <script src="{{ url_for('static', filename='js/admin.js') }}"></script>
+</body>
+</html>
