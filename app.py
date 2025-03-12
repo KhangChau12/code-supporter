@@ -12,7 +12,7 @@ from functools import wraps
 
 from api.chatbot_service import CodeSupporterService
 from api.storage_service import StorageService
-from api.api_service import app as api_app
+from api.api_service import api_bp  # Import Blueprint thay vì app
 
 # Cấu hình logging
 logging.basicConfig(
@@ -81,15 +81,8 @@ def admin_page(current_user):
     """Trang admin để quản lý API keys"""
     return render_template('admin.html', username=current_user)
 
-# --- Đăng ký các blueprint ---
-# QUAN TRỌNG: Di chuyển việc đăng ký blueprint ra khỏi block if __name__ == '__main__':
-
-def register_blueprints(app):
-    """Đăng ký các blueprint"""
-    app.register_blueprint(api_app, url_prefix='/api')
-
-# Đăng ký các blueprint NGAY TẠI ĐÂY để đảm bảo luôn được thực thi
-register_blueprints(app)
+# Đăng ký Blueprint API
+app.register_blueprint(api_bp, url_prefix='/api')
 
 # --- Khởi động ứng dụng ---
 if __name__ == '__main__':

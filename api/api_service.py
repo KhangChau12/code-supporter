@@ -1,8 +1,7 @@
 """
 API Service - Cung cấp RESTful API cho ứng dụng Code Supporter
 """
-from flask import Flask, request, jsonify, Response
-from flask_cors import CORS
+from flask import Blueprint, request, jsonify, Response
 import os
 import logging
 import json
@@ -24,8 +23,8 @@ logger = logging.getLogger(__name__)
 # Load biến môi trường
 load_dotenv()
 
-app = Flask(__name__)
-CORS(app, supports_credentials=True, resources={r"/*": {"origins": "*"}})
+# Tạo Blueprint thay vì Flask app
+api_bp = Blueprint('api', __name__)
 
 # Secret key cho JWT
 SECRET_KEY = os.getenv('API_SECRET_KEY', 'default_secret_key')
@@ -92,7 +91,7 @@ def api_key_required(f):
 
 # --- Các API endpoint ---
 
-@app.route('/api/health', methods=['GET'])
+@api_bp.route('/health', methods=['GET'])
 def health_check():
     """API kiểm tra trạng thái hoạt động của hệ thống"""
     return jsonify({
@@ -102,7 +101,7 @@ def health_check():
         "timestamp": datetime.now().isoformat()
     })
 
-@app.route('/api/register', methods=['POST'])
+@api_bp.route('/register', methods=['POST'])
 def register():
     """API đăng ký tài khoản"""
     try:
@@ -139,7 +138,7 @@ def register():
         logger.error(f"Lỗi đăng ký: {str(e)}")
         return jsonify({"error": f"Lỗi server: {str(e)}"}), 500
 
-@app.route('/api/login', methods=['POST'])
+@api_bp.route('/login', methods=['POST'])
 def login():
     """API đăng nhập"""
     try:
@@ -171,7 +170,7 @@ def login():
         logger.error(f"Lỗi đăng nhập: {str(e)}")
         return jsonify({"error": f"Lỗi server: {str(e)}"}), 500
 
-@app.route('/api/chat', methods=['POST'])
+@api_bp.route('/chat', methods=['POST'])
 @token_required
 def chat_authenticated(current_user):
     """API chat yêu cầu xác thực người dùng"""
@@ -204,7 +203,7 @@ def chat_authenticated(current_user):
             "status": "error"
         }), 500
 
-@app.route('/api/chat/stream', methods=['POST'])
+@api_bp.route('/chat/stream', methods=['POST'])
 @token_required
 def chat_stream(current_user):
     """API chat với phản hồi stream"""
@@ -244,7 +243,7 @@ def chat_stream(current_user):
             "status": "error"
         }), 500
 
-@app.route('/api/chat/public', methods=['POST'])
+@api_bp.route('/chat/public', methods=['POST'])
 @api_key_required
 def chat_public():
     """API chat công khai, yêu cầu API key"""
@@ -274,7 +273,7 @@ def chat_public():
             "status": "error"
         }), 500
 
-@app.route('/api/apikey/create', methods=['POST'])
+@api_bp.route('/apikey/create', methods=['POST'])
 @token_required
 def create_api_key(current_user):
     """API tạo API key mới"""
@@ -301,10 +300,3 @@ def create_api_key(current_user):
             "error": str(e),
             "status": "error"
         }), 500
-
-# --- Khởi động ứng dụng ---
-
-if __name__ == '__main__':
-    port = int(os.environ.get("PORT", 5000))
-    debug = os.environ.get("DEBUG", "False").lower() == "true"
-    app.run(host='0.0.0.0', port=port, debug=debug)
