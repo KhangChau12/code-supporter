@@ -4,7 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Code Supporter - Admin</title>
-    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+    <!-- App Stylesheets -->
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">
 </head>
@@ -12,21 +15,40 @@
     <div class="app-container">
         <header class="app-header">
             <div class="brand">
+                <div class="brand-logo">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="url(#gradient)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <defs>
+                            <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                                <stop offset="0%" stop-color="#3b82f6" />
+                                <stop offset="100%" stop-color="#8b5cf6" />
+                            </linearGradient>
+                        </defs>
+                        <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path>
+                        <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path>
+                    </svg>
+                </div>
                 <h1>Code Supporter</h1>
             </div>
             <div class="user-info">
                 <span id="username-display">{{ username }}</span>
-                <button id="theme-toggle" aria-label="Toggle theme">
+                
+                <!-- Nút Chat -->
+                <a href="/chat" class="nav-link tooltip" data-tooltip="Quay lại Chat">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+                    </svg>
+                    <span class="nav-text">Chat</span>
+                </a>
+                
+                <!-- Chuyển đổi chế độ sáng/tối -->
+                <button id="theme-toggle" class="tooltip" data-tooltip="Chuyển đổi giao diện">
                     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
                     </svg>
                 </button>
-                <a href="/chat" class="nav-link">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
-                    </svg>
-                </a>
-                <button id="logout-button" aria-label="Log out">
+                
+                <!-- Đăng xuất -->
+                <button id="logout-button" class="tooltip" data-tooltip="Đăng xuất">
                     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
                         <polyline points="16 17 21 12 16 7"></polyline>
@@ -37,123 +59,253 @@
         </header>
         
         <main class="admin-container">
-            <section class="admin-section">
-                <h2>Quản lý API Key</h2>
-                <p>Tạo và quản lý các API key để tích hợp Code Supporter vào trang web của bạn.</p>
-                
-                <div class="api-key-form">
-                    <h3>Tạo API Key mới</h3>
-                    <div class="form-group">
-                        <label for="api-key-name">Tên API Key</label>
-                        <input type="text" id="api-key-name" placeholder="Nhập tên để nhận diện API key này">
-                    </div>
-                    <div class="form-group">
-                        <label>Quyền hạn</label>
-                        <div class="checkbox-group">
-                            <label class="checkbox">
-                                <input type="checkbox" id="permission-chat" checked>
-                                <span>Chat API</span>
-                            </label>
-                            <label class="checkbox">
-                                <input type="checkbox" id="permission-stream">
-                                <span>Stream API</span>
-                            </label>
-                        </div>
-                    </div>
-                    <button id="create-api-key" class="primary-button">Tạo API Key</button>
-                </div>
-                
-                <div class="api-key-result" id="api-key-result" style="display:none;">
-                    <h3>API Key đã được tạo</h3>
-                    <div class="alert">
-                        <strong>Lưu ý:</strong> Hãy lưu lại các thông tin này ngay. API Secret sẽ không hiển thị lại sau khi bạn rời khỏi trang.
-                    </div>
-                    
-                    <!-- Thêm phần giải thích về API Key và API Secret -->
-                    <div class="key-explanation">
-                        <h4>Cách sử dụng API Key</h4>
-                        <p>Khi tích hợp chatbot vào website, bạn chỉ cần dùng <strong>API Key</strong> (không cần API Secret). API Key được sử dụng để xác định nguồn gọi API và được đặt trong header <code>X-API-Key</code>.</p>
-                        
-                        <h4>API Key vs API Secret là gì?</h4>
-                        <ul>
-                            <li><strong>API Key</strong>: Là mã định danh công khai, dùng để xác định nguồn gọi API.</li>
-                            <li><strong>API Secret</strong>: Là mã bí mật, tương tự như mật khẩu, chỉ hiển thị một lần duy nhất. Hiện tại bạn không cần dùng API Secret, nhưng vẫn nên lưu trữ an toàn cho các tính năng bảo mật trong tương lai.</li>
-                        </ul>
-                    </div>
-                    
-                    <div class="key-info">
-                        <div class="key-field">
-                            <label>API Key:</label>
-                            <div class="key-value" id="api-key-value"></div>
-                            <button class="copy-button" data-target="api-key-value">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
-                                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
-                                </svg>
-                            </button>
-                        </div>
-                        <div class="key-field">
-                            <label>API Secret:</label>
-                            <div class="key-value" id="api-secret-value"></div>
-                            <button class="copy-button" data-target="api-secret-value">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
-                                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
-                                </svg>
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </section>
+            <!-- Dashboard cards được tạo bằng JS -->
             
-            <section class="admin-section">
-                <h2>Hướng dẫn tích hợp</h2>
-                <div class="integration-guide">
-                    <h3>1. Thêm script vào trang web của bạn</h3>
-                    <pre><code>&lt;script src="{{ request.url_root }}static/js/codesupporter-widget.js"&gt;&lt;/script&gt;</code>
-                    <button class="copy-button" data-target="code-snippet-1">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
-                            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+            <!-- Admin Tabs -->
+            <div class="admin-tabs">
+                <div class="admin-tab active" data-target="api-keys-tab">API Keys</div>
+                <div class="admin-tab" data-target="integration-tab">Tích hợp</div>
+                <div class="admin-tab" data-target="analytics-tab">Phân tích</div>
+            </div>
+            
+            <!-- Tab Content -->
+            <div id="api-keys-tab" class="admin-tab-content active">
+                <section class="admin-section">
+                    <h2>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"></path>
                         </svg>
-                    </button></pre>
+                        Quản lý API Key
+                    </h2>
+                    <p>Tạo và quản lý các API key để tích hợp Code Supporter vào trang web của bạn.</p>
                     
-                    <h3>2. Khởi tạo widget</h3>
-                    <pre><code>&lt;script&gt;
-const chatbot = window.initCodeSupporter({
+                    <div class="api-key-form">
+                        <h3>Tạo API Key mới</h3>
+                        <div class="form-group">
+                            <label for="api-key-name">Tên API Key</label>
+                            <input type="text" id="api-key-name" placeholder="Nhập tên để nhận diện API key này">
+                        </div>
+                        <div class="form-group">
+                            <label>Quyền hạn</label>
+                            <div class="checkbox-group">
+                                <label class="checkbox">
+                                    <input type="checkbox" id="permission-chat" checked>
+                                    <span>Chat API</span>
+                                </label>
+                                <label class="checkbox">
+                                    <input type="checkbox" id="permission-stream">
+                                    <span>Stream API</span>
+                                </label>
+                            </div>
+                        </div>
+                        <button id="create-api-key" class="primary-button">Tạo API Key</button>
+                    </div>
+                    
+                    <div class="api-key-result" id="api-key-result" style="display:none;">
+                        <h3>
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                                <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                            </svg>
+                            API Key đã được tạo
+                        </h3>
+                        <div class="alert">
+                            <strong>Lưu ý:</strong> Hãy lưu lại các thông tin này ngay. API Secret sẽ không hiển thị lại sau khi bạn rời khỏi trang.
+                        </div>
+                        
+                        <!-- Thêm phần giải thích về API Key và API Secret -->
+                        <div class="key-explanation">
+                            <h4>Cách sử dụng API Key</h4>
+                            <p>Khi tích hợp chatbot vào website, bạn chỉ cần dùng <strong>API Key</strong> (không cần API Secret). API Key được sử dụng để xác định nguồn gọi API và được đặt trong header <code>X-API-Key</code>.</p>
+                            
+                            <h4>API Key vs API Secret là gì?</h4>
+                            <ul>
+                                <li><strong>API Key</strong>: Là mã định danh công khai, dùng để xác định nguồn gọi API.</li>
+                                <li><strong>API Secret</strong>: Là mã bí mật, tương tự như mật khẩu, chỉ hiển thị một lần duy nhất. Hiện tại bạn không cần dùng API Secret, nhưng vẫn nên lưu trữ an toàn cho các tính năng bảo mật trong tương lai.</li>
+                            </ul>
+                        </div>
+                        
+                        <div class="key-info">
+                            <div class="key-field">
+                                <label>API Key:</label>
+                                <div class="key-value" id="api-key-value"></div>
+                                <button class="copy-button" data-target="api-key-value">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                                        <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                                    </svg>
+                                </button>
+                            </div>
+                            <div class="key-field">
+                                <label>API Secret:</label>
+                                <div class="key-value" id="api-secret-value"></div>
+                                <button class="copy-button" data-target="api-secret-value">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                                        <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            </div>
+            
+            <div id="integration-tab" class="admin-tab-content">
+                <section class="admin-section">
+                    <h2>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
+                            <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
+                        </svg>
+                        Hướng dẫn tích hợp
+                    </h2>
+                    <div class="integration-guide">
+                        <h3>
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <polyline points="16 18 22 12 16 6"></polyline>
+                                <polyline points="8 6 2 12 8 18"></polyline>
+                            </svg>
+                            1. Thêm script vào trang web của bạn
+                        </h3>
+                        <div class="code-header">HTML</div>
+                        <pre><code class="language-html">&lt;script src="{{ request.url_root }}static/js/codesupporter-widget.js"&gt;&lt;/script&gt;</code>
+                        <button class="copy-button">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                            </svg>
+                        </button></pre>
+                        
+                        <h3>
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <circle cx="12" cy="12" r="10"></circle>
+                                <circle cx="12" cy="12" r="4"></circle>
+                                <line x1="4.93" y1="4.93" x2="9.17" y2="9.17"></line>
+                                <line x1="14.83" y1="14.83" x2="19.07" y2="19.07"></line>
+                                <line x1="14.83" y1="9.17" x2="19.07" y2="4.93"></line>
+                                <line x1="14.83" y1="9.17" x2="18.36" y2="5.64"></line>
+                                <line x1="4.93" y1="19.07" x2="9.17" y2="14.83"></line>
+                            </svg>
+                            2. Khởi tạo widget
+                        </h3>
+                        <div class="code-header">JavaScript</div>
+                        <pre><code class="language-javascript">const chatbot = window.initCodeSupporter({
     apiUrl: '{{ request.url_root }}api/chat/public',
     apiKey: 'YOUR_API_KEY_HERE', // Thay thế bằng API Key của bạn
     position: 'bottom-right',
     theme: 'dark',
     chatTitle: 'Code Supporter',
     initialMessage: 'Xin chào! Tôi có thể giúp gì cho bạn với bài tập lập trình?'
-});
-&lt;/script&gt;</code>
-                    <button class="copy-button" data-target="code-snippet-2">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
-                            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
-                        </svg>
-                    </button></pre>
-                    
-                    <!-- Thêm ví dụ đã điền API Key -->
-                    <h3>3. Cách sử dụng API Key của bạn</h3>
-                    <p>Sao chép API Key ở trên và thay thế 'YOUR_API_KEY_HERE' trong mã khởi tạo widget. Ví dụ:</p>
-                    <pre><code>// Giả sử API Key của bạn là: 36e22eb0-e1ad-44f0-a387-a408251cdbf2
-const chatbot = window.initCodeSupporter({
+});</code>
+                        <button class="copy-button">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                            </svg>
+                        </button></pre>
+                        
+                        <h3>
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <rect x="2" y="4" width="20" height="16" rx="2"></rect>
+                                <path d="M2 10h20"></path>
+                            </svg>
+                            3. Các tùy chọn khác
+                        </h3>
+                        <p>Widget hỗ trợ nhiều tùy chọn khác để phù hợp với thiết kế của trang web bạn.</p>
+                        <div class="code-header">Tùy chọn đầy đủ</div>
+                        <pre><code class="language-javascript">const chatbot = window.initCodeSupporter({
     apiUrl: '{{ request.url_root }}api/chat/public',
-    apiKey: '36e22eb0-e1ad-44f0-a387-a408251cdbf2', // API Key của bạn
-    position: 'bottom-right',
-    theme: 'dark',
+    apiKey: 'YOUR_API_KEY_HERE',
+    position: 'bottom-right', // bottom-right, bottom-left, top-right, top-left
+    theme: 'dark', // dark, light, auto
     chatTitle: 'Code Supporter',
-    initialMessage: 'Xin chào! Tôi có thể giúp gì cho bạn với bài tập lập trình?'
-});
-</code></pre>
-                </div>
-            </section>
+    initialMessage: 'Xin chào! Tôi có thể giúp gì cho bạn?',
+    maxHeight: '500px',
+    width: '350px',
+    showOnInit: false, // true để hiển thị chat ngay khi tải trang
+    sessionId: 'unique-id', // ID để lưu lịch sử chat
+    
+    // Các màu tùy chỉnh
+    primaryColor: '#6366f1', // Màu chủ đạo
+    textColor: '#ffffff', // Màu chữ
+    backgroundColor: '#1e293b' // Màu nền
+});</code>
+                        <button class="copy-button">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                            </svg>
+                        </button></pre>
+                        
+                        <h3>
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                                <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                            </svg>
+                            4. Ví dụ đầy đủ
+                        </h3>
+                        <div class="code-header">HTML + JavaScript</div>
+                        <pre><code class="language-html">&lt;!-- Thêm vào phần head hoặc cuối body --&gt;
+&lt;script src="{{ request.url_root }}static/js/codesupporter-widget.js"&gt;&lt;/script&gt;
+&lt;script&gt;
+    document.addEventListener('DOMContentLoaded', function() {
+        const chatbot = window.initCodeSupporter({
+            apiUrl: '{{ request.url_root }}api/chat/public',
+            apiKey: 'YOUR_API_KEY_HERE',
+            theme: 'dark',
+            position: 'bottom-right'
+        });
+        
+        // Tùy chọn: Kích hoạt chat khi người dùng nhấn nút
+        document.getElementById('help-button').addEventListener('click', function() {
+            chatbot.toggleChatWindow(true);
+        });
+    });
+&lt;/script&gt;</code>
+                        <button class="copy-button">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                            </svg>
+                        </button></pre>
+                    </div>
+                </section>
+            </div>
+            
+            <div id="analytics-tab" class="admin-tab-content">
+                <section class="admin-section">
+                    <h2>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M3 3v18h18"></path>
+                            <path d="M18.4 15.2c-.4 0-.8-.1-1.1-.3-.3-.2-.6-.5-.7-.8-.1-.3-.2-.8-.2-1.3s.1-.9.2-1.3c.1-.4.4-.6.7-.8.3-.2.7-.3 1.1-.3.4 0 .8.1 1.1.3.3.2.6.5.7.8.1.3.2.8.2 1.3s-.1.9-.2 1.3c-.1.4-.4.6-.7.8-.3.2-.7.3-1.1.3zM13.5 12h.1"></path>
+                            <path d="M9.5 8a2.5 2.5 0 1 1 0 5 2.5 2.5 0 0 1 0-5z"></path>
+                        </svg>
+                        Phân tích dữ liệu
+                    </h2>
+                    <div class="card">
+                        <div class="card-header">
+                            <h3>Phân tích sử dụng API</h3>
+                        </div>
+                        <div class="card-body">
+                            <p>Tính năng phân tích sẽ sớm được cập nhật trong thời gian tới. Tại đây bạn sẽ có thể theo dõi:</p>
+                            <ul class="mt-4">
+                                <li>Số lượng lượt gọi API theo thời gian</li>
+                                <li>Thống kê sử dụng theo API key</li>
+                                <li>Các chủ đề và từ khóa phổ biến</li>
+                                <li>Báo cáo hiệu suất và chi phí</li>
+                            </ul>
+                        </div>
+                    </div>
+                </section>
+            </div>
         </main>
     </div>
     
+    <!-- Scripts -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.24.1/prism.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.24.1/components/prism-javascript.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.24.1/components/prism-html.min.js"></script>
     <script src="{{ url_for('static', filename='js/admin.js') }}"></script>
 </body>
 </html>
