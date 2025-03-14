@@ -1,6 +1,6 @@
 /**
  * Code Supporter Widget - JavaScript cho tích hợp vào trang web
- * Cập nhật: Thêm tính năng theo dõi người dùng qua user_id
+ * Cập nhật: Thêm tính năng phóng to/thu nhỏ và cải tiến giao diện
  */
 (function() {
   // Hàm tạo widget
@@ -23,6 +23,7 @@
       };
       
       this.conversationHistory = [];
+      this.isMaximized = false;
       
       // Khởi tạo widget
       this.init();
@@ -59,12 +60,13 @@
       
       const css = `
         .cs-widget-container {
-          --cs-primary-color: #3a86ff;
+          --cs-primary-color: #4361ee;
+          --cs-primary-gradient: linear-gradient(135deg, #4361ee, #3a0ca3);
           --cs-text-color: ${isDark ? '#ffffff' : '#333333'};
           --cs-bg-color: ${isDark ? '#1e1e1e' : '#ffffff'};
-          --cs-secondary-bg: ${isDark ? '#333333' : '#f0f0f0'};
+          --cs-secondary-bg: ${isDark ? '#2d2d2d' : '#f5f5f5'};
           --cs-border-color: ${isDark ? '#555555' : '#dddddd'};
-          --cs-accent-color: #4CAF50;
+          --cs-accent-color: #4CC9F0;
           
           font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
           font-size: 14px;
@@ -87,19 +89,19 @@
           width: 60px;
           height: 60px;
           border-radius: 50%;
-          background-color: var(--cs-primary-color);
+          background: var(--cs-primary-gradient);
           color: white;
           display: flex;
           justify-content: center;
           align-items: center;
           cursor: pointer;
-          box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-          transition: transform 0.3s, background-color 0.3s;
+          box-shadow: 0 4px 12px rgba(67, 97, 238, 0.3);
+          transition: transform 0.3s, box-shadow 0.3s;
         }
         
         .cs-chat-button:hover {
           transform: scale(1.1);
-          background-color: #2563eb;
+          box-shadow: 0 6px 16px rgba(67, 97, 238, 0.4);
         }
         
         .cs-chat-icon {
@@ -115,12 +117,12 @@
           height: ${this.config.maxHeight};
           max-height: calc(100vh - 150px);
           background-color: var(--cs-bg-color);
-          border-radius: 10px;
-          box-shadow: 0 5px 25px rgba(0, 0, 0, 0.3);
+          border-radius: 16px;
+          box-shadow: 0 8px 30px rgba(0, 0, 0, 0.3);
           display: flex;
           flex-direction: column;
           overflow: hidden;
-          transition: opacity 0.3s, transform 0.3s;
+          transition: all 0.3s ease;
           opacity: 0;
           transform: scale(0.9);
           transform-origin: ${this.config.position.includes('right') ? 'bottom right' : 'bottom left'};
@@ -133,13 +135,46 @@
           pointer-events: auto;
         }
         
+        .cs-chat-window.maximized {
+          position: fixed;
+          top: 10px;
+          left: 10px;
+          right: 10px;
+          bottom: 10px;
+          width: calc(100% - 20px) !important;
+          height: calc(100% - 20px) !important;
+          max-height: none !important;
+          border-radius: 16px;
+          z-index: 9999;
+        }
+        
         .cs-chat-header {
           padding: 15px;
-          background-color: var(--cs-primary-color);
+          background: var(--cs-primary-gradient);
           color: white;
           display: flex;
           justify-content: space-between;
           align-items: center;
+          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+        
+        .cs-chat-title-container {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+        }
+        
+        .cs-chat-logo {
+          width: 24px;
+          height: 24px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          background-color: white;
+          border-radius: 50%;
+          color: var(--cs-primary-color);
+          font-weight: bold;
+          font-size: 14px;
         }
         
         .cs-chat-title {
@@ -147,18 +182,29 @@
           font-size: 16px;
         }
         
-        .cs-close-button {
-          background: none;
+        .cs-header-actions {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+        }
+        
+        .cs-header-button {
+          background: rgba(255, 255, 255, 0.2);
           border: none;
           color: white;
-          font-size: 18px;
+          font-size: 14px;
+          border-radius: 6px;
+          width: 30px;
+          height: 30px;
           cursor: pointer;
-          padding: 0;
           display: flex;
           align-items: center;
           justify-content: center;
-          width: 24px;
-          height: 24px;
+          transition: background-color 0.2s;
+        }
+        
+        .cs-header-button:hover {
+          background: rgba(255, 255, 255, 0.3);
         }
         
         .cs-messages-container {
@@ -167,87 +213,125 @@
           padding: 15px;
           display: flex;
           flex-direction: column;
-          gap: 8px;
+          gap: 12px;
+          scroll-behavior: smooth;
         }
         
         .cs-message {
           max-width: 85%;
-          padding: 10px 15px;
-          border-radius: 15px;
+          padding: 12px 16px;
+          border-radius: 18px;
           word-wrap: break-word;
           line-height: 1.5;
+          box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+          transition: transform 0.2s;
+          animation: messageAppear 0.3s ease forwards;
+        }
+        
+        @keyframes messageAppear {
+          0% {
+            opacity: 0;
+            transform: translateY(10px);
+          }
+          100% {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+        
+        .cs-message:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 3px 6px rgba(0, 0, 0, 0.1);
         }
         
         .cs-bot-message {
           align-self: flex-start;
           background-color: var(--cs-secondary-bg);
+          border-bottom-left-radius: 6px;
         }
         
         .cs-user-message {
           align-self: flex-end;
-          background-color: var(--cs-primary-color);
+          background: var(--cs-primary-gradient);
           color: white;
+          border-bottom-right-radius: 6px;
         }
         
         .cs-input-container {
-          padding: 10px;
+          padding: 12px 16px;
           display: flex;
           gap: 10px;
           border-top: 1px solid var(--cs-border-color);
+          background-color: var(--cs-bg-color);
         }
         
         .cs-input {
           flex: 1;
-          padding: 10px 15px;
-          border-radius: 20px;
+          padding: 12px 16px;
+          border-radius: 24px;
           border: 1px solid var(--cs-border-color);
           background-color: var(--cs-secondary-bg);
           color: var(--cs-text-color);
           outline: none;
           resize: none;
-          min-height: 40px;
-          max-height: 100px;
+          min-height: 48px;
+          max-height: 120px;
           overflow-y: auto;
+          transition: border-color 0.3s;
+          box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+        }
+        
+        .cs-input:focus {
+          border-color: var(--cs-primary-color);
+          box-shadow: 0 0 0 2px rgba(67, 97, 238, 0.2);
         }
         
         .cs-send-button {
-          width: 40px;
-          height: 40px;
+          width: 48px;
+          height: 48px;
           border-radius: 50%;
-          background-color: var(--cs-primary-color);
+          background: var(--cs-primary-gradient);
           color: white;
           display: flex;
           justify-content: center;
           align-items: center;
           cursor: pointer;
           border: none;
+          box-shadow: 0 2px 6px rgba(67, 97, 238, 0.3);
+          transition: transform 0.2s, box-shadow 0.2s;
         }
         
         .cs-send-button:hover {
-          background-color: #2563eb;
+          transform: translateY(-2px);
+          box-shadow: 0 4px 8px rgba(67, 97, 238, 0.4);
         }
         
         .cs-send-button:disabled {
-          background-color: var(--cs-border-color);
+          background: #cccccc;
           cursor: not-allowed;
+          box-shadow: none;
+          transform: none;
         }
         
         .cs-typing-indicator {
           align-self: flex-start;
           background-color: var(--cs-secondary-bg);
-          padding: 10px 15px;
-          border-radius: 15px;
+          padding: 12px 16px;
+          border-radius: 18px;
+          border-bottom-left-radius: 6px;
           margin-bottom: 10px;
           display: flex;
           gap: 4px;
           align-items: center;
+          box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
         }
         
         .cs-typing-dot {
           width: 8px;
           height: 8px;
-          background-color: var(--cs-border-color);
+          background-color: var(--cs-primary-color);
           border-radius: 50%;
+          opacity: 0.7;
           animation: cs-typing-animation 1.5s infinite ease-in-out;
         }
         
@@ -262,13 +346,15 @@
         
         .cs-code-block {
           background-color: ${isDark ? '#1a1a1a' : '#f8f8f8'};
-          padding: 10px;
-          border-radius: 5px;
+          padding: 14px;
+          border-radius: 8px;
           font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
           overflow-x: auto;
-          margin: 5px 0;
+          margin: 8px 0;
           white-space: pre-wrap;
           border: 1px solid var(--cs-border-color);
+          font-size: 13px;
+          line-height: 1.6;
         }
         
         .cs-copy-button {
@@ -278,12 +364,16 @@
           background-color: var(--cs-primary-color);
           color: white;
           border: none;
-          border-radius: 3px;
-          padding: 2px 5px;
+          border-radius: 4px;
+          padding: 4px 8px;
           font-size: 12px;
           cursor: pointer;
           opacity: 0;
-          transition: opacity 0.3s;
+          transition: all 0.2s;
+        }
+        
+        .cs-copy-button:hover {
+          background-color: #3a0ca3;
         }
         
         .cs-code-container:hover .cs-copy-button {
@@ -295,10 +385,12 @@
         }
         
         .cs-branding {
-          font-size: 11px;
+          font-size: 12px;
           text-align: center;
-          padding: 5px;
-          opacity: 0.7;
+          padding: 8px;
+          opacity: 0.8;
+          background-color: var(--cs-bg-color);
+          border-top: 1px solid var(--cs-border-color);
         }
         
         @media (max-width: 768px) {
@@ -341,17 +433,43 @@
       const header = document.createElement('div');
       header.className = 'cs-chat-header';
       
+      // Title container với logo
+      const titleContainer = document.createElement('div');
+      titleContainer.className = 'cs-chat-title-container';
+      
+      const logo = document.createElement('div');
+      logo.className = 'cs-chat-logo';
+      logo.textContent = 'CS';
+      titleContainer.appendChild(logo);
+      
       const title = document.createElement('div');
       title.className = 'cs-chat-title';
       title.textContent = this.config.chatTitle;
-      header.appendChild(title);
+      titleContainer.appendChild(title);
       
+      header.appendChild(titleContainer);
+      
+      // Header actions
+      const headerActions = document.createElement('div');
+      headerActions.className = 'cs-header-actions';
+      
+      // Nút phóng to/thu nhỏ
+      const maximizeButton = document.createElement('button');
+      maximizeButton.className = 'cs-header-button cs-maximize-button';
+      maximizeButton.innerHTML = '⛶';
+      maximizeButton.setAttribute('aria-label', 'Phóng to/Thu nhỏ');
+      maximizeButton.setAttribute('title', 'Phóng to/Thu nhỏ');
+      headerActions.appendChild(maximizeButton);
+      
+      // Nút đóng
       const closeButton = document.createElement('button');
-      closeButton.className = 'cs-close-button';
-      closeButton.innerHTML = '&times;';
+      closeButton.className = 'cs-header-button cs-close-button';
+      closeButton.innerHTML = '✕';
       closeButton.setAttribute('aria-label', 'Đóng cửa sổ chat');
-      header.appendChild(closeButton);
+      closeButton.setAttribute('title', 'Đóng');
+      headerActions.appendChild(closeButton);
       
+      header.appendChild(headerActions);
       this.chatWindow.appendChild(header);
       
       // Vùng tin nhắn
@@ -371,7 +489,12 @@
       
       this.sendButton = document.createElement('button');
       this.sendButton.className = 'cs-send-button';
-      this.sendButton.innerHTML = '&#10148;';
+      this.sendButton.innerHTML = `
+        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="22" y1="2" x2="11" y2="13"></line>
+          <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+        </svg>
+      `;
       this.sendButton.setAttribute('aria-label', 'Gửi tin nhắn');
       inputContainer.appendChild(this.sendButton);
       
@@ -380,7 +503,7 @@
       // Thêm branding
       const branding = document.createElement('div');
       branding.className = 'cs-branding';
-      branding.textContent = 'Powered by Code Supporter';
+      branding.innerHTML = 'Powered by <strong>Code Supporter</strong>';
       this.chatWindow.appendChild(branding);
       
       // Thêm vào container
@@ -400,6 +523,12 @@
         this.toggleChatWindow(false);
       });
       
+      // Xử lý phóng to/thu nhỏ
+      const maximizeButton = this.chatWindow.querySelector('.cs-maximize-button');
+      maximizeButton.addEventListener('click', () => {
+        this.toggleMaximize();
+      });
+      
       // Gửi tin nhắn
       this.sendButton.addEventListener('click', () => {
         this.sendMessage();
@@ -416,7 +545,7 @@
       // Tự động điều chỉnh chiều cao textarea
       this.inputField.addEventListener('input', () => {
         this.inputField.style.height = 'auto';
-        this.inputField.style.height = (this.inputField.scrollHeight > 100 ? 100 : this.inputField.scrollHeight) + 'px';
+        this.inputField.style.height = (this.inputField.scrollHeight > 120 ? 120 : this.inputField.scrollHeight) + 'px';
       });
     }
     
@@ -427,6 +556,24 @@
       } else {
         this.chatWindow.classList.remove('active');
       }
+    }
+    
+    toggleMaximize() {
+      this.isMaximized = !this.isMaximized;
+      this.chatWindow.classList.toggle('maximized', this.isMaximized);
+      
+      // Thay đổi icon tùy theo trạng thái
+      const maximizeButton = this.chatWindow.querySelector('.cs-maximize-button');
+      if (this.isMaximized) {
+        maximizeButton.innerHTML = '⛶';
+        maximizeButton.setAttribute('title', 'Thu nhỏ');
+      } else {
+        maximizeButton.innerHTML = '⛶';
+        maximizeButton.setAttribute('title', 'Phóng to');
+      }
+      
+      // Cuộn xuống cuối tin nhắn
+      this.messagesContainer.scrollTop = this.messagesContainer.scrollHeight;
     }
     
     sendMessage() {
