@@ -220,16 +220,25 @@ fetch('{{ request.url_root }}api/chat/public', {
                     
                     <!-- Thống kê sử dụng API -->
                     <div class="analytics-container">
-                        <h3>Thống kê sử dụng API</h3>
-                        
-                        <!-- Chọn API Key để phân tích -->
-                        <div class="form-group">
-                            <label for="analytics-api-key">Chọn API Key</label>
-                            <select id="analytics-api-key">
-                                <option value="">Tất cả API Keys</option>
-                                <!-- Các lựa chọn API key sẽ được thêm bằng JavaScript -->
-                            </select>
-                            <button id="load-analytics" class="secondary-button">Tải dữ liệu</button>
+                        <div class="analytics-header">
+                            <h3>Thống kê sử dụng API</h3>
+                            
+                            <!-- Chọn API Key để phân tích -->
+                            <div class="analytics-controls">
+                                <div class="select-wrapper">
+                                    <label for="analytics-api-key">Chọn API Key</label>
+                                    <select id="analytics-api-key" class="styled-select">
+                                        <option value="">Tất cả API Keys</option>
+                                        <!-- Các lựa chọn API key sẽ được thêm bằng JavaScript -->
+                                    </select>
+                                </div>
+                                <button id="load-analytics" class="secondary-button">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+                                    </svg>
+                                    Tải dữ liệu
+                                </button>
+                            </div>
                         </div>
                         
                         <!-- Hiển thị thống kê -->
@@ -267,13 +276,9 @@ fetch('{{ request.url_root }}api/chat/public', {
                                 <div class="stats-card warning">
                                     <div class="card-icon">
                                         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                            <path d="M17 18a5 5 0 0 0-10 0"></path>
-                                            <line x1="12" y1="9" x2="12" y2="2"></line>
-                                            <path d="M4.22 10.22a1 1 0 1 0-1.41-1.41l1.41 1.41z"></path>
-                                            <path d="M1 12h.01"></path>
-                                            <path d="M21.22 10.22a1 1 0 1 1 1.41-1.41l-1.41 1.41z"></path>
-                                            <path d="M23 12h-.01"></path>
-                                            <path d="M12 12m-3 0a3 3 0 1 0 6 0a3 3 0 1 0-6 0"></path>
+                                            <circle cx="12" cy="12" r="10"></circle>
+                                            <line x1="12" y1="8" x2="12" y2="12"></line>
+                                            <line x1="12" y1="16" x2="12.01" y2="16"></line>
                                         </svg>
                                     </div>
                                     <div class="card-content">
@@ -300,7 +305,20 @@ fetch('{{ request.url_root }}api/chat/public', {
                             
                             <!-- Phần hiển thị người dùng gần đây -->
                             <div class="user-section">
-                                <h3>Người dùng gần đây</h3>
+                                <div class="section-header">
+                                    <h3>Người dùng gần đây</h3>
+                                    <div class="section-actions">
+                                        <button class="action-button" title="Xuất dữ liệu">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                                <polyline points="7 10 12 15 17 10"></polyline>
+                                                <line x1="12" y1="15" x2="12" y2="3"></line>
+                                            </svg>
+                                            Xuất CSV
+                                        </button>
+                                    </div>
+                                </div>
+                                
                                 <div class="user-table-container">
                                     <table class="user-table">
                                         <thead>
@@ -326,6 +344,11 @@ fetch('{{ request.url_root }}api/chat/public', {
                         </div>
                         
                         <div class="no-data" id="no-analytics-data" style="display: none;">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round">
+                                <circle cx="12" cy="12" r="10"></circle>
+                                <line x1="8" y1="12" x2="16" y2="12"></line>
+                            </svg>
+                            <h3>Không có dữ liệu</h3>
                             <p>Chưa có dữ liệu phân tích nào cho API key này.</p>
                         </div>
                     </div>
