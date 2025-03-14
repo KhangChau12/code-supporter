@@ -137,65 +137,47 @@ class StorageService:
         """Đảm bảo filename an toàn, không chứa ký tự đặc biệt"""
         return re.sub(r'[^\w\-_\.]', '_', filename)
     
-    def create_user(self, username: str, password: str) -> Tuple[bool, str]:
-        """Tạo tài khoản người dùng mới"""
+    def _setup_mongodb_indexes(self):
+        """Thiết lập các indexes cho hiệu suất tốt hơn"""
+        if self.storage_type != "mongodb":
+            return
+            
         try:
-            if self.storage_type == "mongodb":
-                # Kiểm tra xem người dùng đã tồn tại chưa
-                if self.db.users.find_one({"username": username}):
-                    return False, "Tên đăng nhập đã tồn tại"
-                
-                # Tạo tài khoản mới
-                user_data = {
-                    "username": username,
-                    "password": self._hash_password(password),
-                    "created_at": datetime.now(),
-                    "last_login": None,
-                    "role": "user",  # Thêm role để phân quyền trong tương lai
-                    "settings": {
-                        "theme": "dark",
-                        "language": "vi"
-                    }
-                }
-                self.db.users.insert_one(user_data)
-                
-            else:
-                # Lưu trữ file
-                users_file = os.path.join(self.data_dir, "users", "users.json")
-                
-                if os.path.exists(users_file):
-                    with open(users_file, "r", encoding="utf-8") as f:
-                        users = json.load(f)
-                else:
-                    users = []
-                
-                # Kiểm tra xem người dùng đã tồn tại chưa
-                if any(user["username"] == username for user in users):
-                    return False, "Tên đăng nhập đã tồn tại"
-                
-                # Tạo tài khoản mới
-                user_data = {
-                    "username": username,
-                    "password": self._hash_password(password),
-                    "created_at": datetime.now().isoformat(),
-                    "last_login": None,
-                    "role": "user",
-                    "settings": {
-                        "theme": "dark",
-                        "language": "vi"
-                    }
-                }
-                users.append(user_data)
-                
-                with open(users_file, "w", encoding="utf-8") as f:
-                    json.dump(users, f, ensure_ascii=False, indent=2)
+            # Tạo indexes cho từng collection một cách riêng biệt để tránh lỗi
             
-            logger.info(f"Tạo tài khoản thành công cho {username}")
-            return True, "Tạo tài khoản thành công"
+            # Index cho users collection
+            try:
+                self.db.users.create_index("username", unique=True)
+                logger.info("Đã tạo index cho users collection")
+            except Exception as e:
+                logger.error(f"Lỗi khi tạo index cho users collection: {str(e)}")
             
+            # Index cho conversations collection
+            try:
+                self.db.conversations.create_index([("username", 1), ("timestamp", -1)])
+                logger.info("Đã tạo index cho conversations collection")
+            except Exception as e:
+                logger.error(f"Lỗi khi tạo index cho conversations collection: {str(e)}")
+            
+            # Index cho api_keys collection
+            try:
+                self.db.api_keys.create_index("key", unique=True)
+                self.db.api_keys.create_index("created_by")
+                logger.info("Đã tạo index cho api_keys collection")
+            except Exception as e:
+                logger.error(f"Lỗi khi tạo index cho api_keys collection: {str(e)}")
+            
+            # Index cho api_users collection
+            try:
+                self.db.api_users.create_index([("api_key", 1), ("user_id", 1)])
+                self.db.api_users.create_index("last_active", -1)
+                logger.info("Đã tạo index cho api_users collection")
+            except Exception as e:
+                logger.error(f"Lỗi khi tạo index cho api_users collection: {str(e)}")
+            
+            logger.info("Quá trình thiết lập MongoDB indexes đã hoàn tất")
         except Exception as e:
-            logger.error(f"Lỗi khi tạo tài khoản: {str(e)}")
-            return False, f"Lỗi: {str(e)}"
+            logger.error(f"Lỗi khi thiết lập MongoDB indexes: {str(e)}")
     
     def authenticate_user(self, username: str, password: str) -> bool:
         """Xác thực người dùng"""
