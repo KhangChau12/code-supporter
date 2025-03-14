@@ -482,3 +482,61 @@ document.addEventListener('DOMContentLoaded', function() {
         }).format(date);
     }
 });
+
+// Xử lý xuất dữ liệu CSV
+document.addEventListener('click', function(e) {
+    const exportButton = e.target.closest('.action-button[title="Xuất dữ liệu"]');
+    if (exportButton) {
+        exportUserDataToCSV();
+    }
+});
+
+function exportUserDataToCSV() {
+    // Kiểm tra xem có dữ liệu người dùng không
+    const tableBody = document.getElementById('api-users-table-body');
+    if (!tableBody || tableBody.rows.length === 0) {
+        alert('Không có dữ liệu người dùng để xuất');
+        return;
+    }
+    
+    // Lấy tiêu đề cột
+    const headers = Array.from(document.querySelectorAll('.user-table th')).map(th => th.textContent.trim());
+    
+    // Lấy dữ liệu hàng
+    const rows = Array.from(tableBody.rows).map(row => {
+        return Array.from(row.cells).map(cell => {
+            // Nếu cell chứa thẻ pre (cho thông tin JSON), lấy text content
+            const pre = cell.querySelector('pre');
+            if (pre) {
+                return `"${pre.textContent.replace(/"/g, '""')}"`;
+            }
+            return `"${cell.textContent.replace(/"/g, '""')}"`;
+        });
+    });
+    
+    // Tạo nội dung CSV
+    const csvContent = [
+        headers.join(','),
+        ...rows.map(row => row.join(','))
+    ].join('\n');
+    
+    // Tạo blob và tạo URL cho nó
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    
+    // Tạo thẻ a để tải xuống
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', `api-users-${new Date().toISOString().slice(0, 10)}.csv`);
+    link.style.display = 'none';
+    
+    // Thêm vào DOM, kích hoạt sự kiện click, và xóa khỏi DOM
+    document.body.appendChild(link);
+    link.click();
+    
+    // Dọn dẹp
+    setTimeout(() => {
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+    }, 100);
+}
