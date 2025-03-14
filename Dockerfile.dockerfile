@@ -1,17 +1,23 @@
-FROM python:3.9-slim
+FROM python:3.9-bullseye  # Sử dụng Debian thay vì slim
 
-# Cài đặt các dependencies cần thiết
+# Cài đặt dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
+    curl \
+    pkg-config \
+    libssl-dev \
     && rm -rf /var/lib/apt/lists/*
+
+# Cài đặt Rust
+RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+ENV PATH="/root/.cargo/bin:${PATH}"
+RUN rustup default stable && cargo --version
 
 WORKDIR /app
 
 # Sao chép và cài đặt dependencies trước
 COPY requirements.txt .
-
-# Cài đặt packages với --prefer-binary để ưu tiên sử dụng wheels
-RUN pip install --no-cache-dir --prefer-binary -r requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt
 
 # Sao chép phần còn lại của ứng dụng
 COPY . .
