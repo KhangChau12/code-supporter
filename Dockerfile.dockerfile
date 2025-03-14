@@ -1,20 +1,17 @@
 FROM python:3.9-slim
 
-# Cài đặt dependencies
+# Cài đặt các dependencies cần thiết
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
-    curl \
     && rm -rf /var/lib/apt/lists/*
-
-# Cài đặt Rust
-RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
-ENV PATH="/root/.cargo/bin:${PATH}"
 
 WORKDIR /app
 
 # Sao chép và cài đặt dependencies trước
 COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+
+# Cài đặt packages với --prefer-binary để ưu tiên sử dụng wheels
+RUN pip install --no-cache-dir --prefer-binary -r requirements.txt
 
 # Sao chép phần còn lại của ứng dụng
 COPY . .
