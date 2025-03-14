@@ -1,5 +1,6 @@
 """
 Code Supporter - Ứng dụng chính
+Cập nhật: Cấu hình MongoDB tốt hơn
 """
 from flask import Flask, render_template, request, redirect, url_for, jsonify
 from flask_cors import CORS
@@ -50,7 +51,17 @@ def token_required(f):
             # Giải mã token
             data = jwt.decode(token, SECRET_KEY, algorithms=["HS256"])
             current_user = data['username']
-        except:
+        except jwt.ExpiredSignatureError:
+            # Token hết hạn
+            logger.info(f"Token hết hạn, chuyển hướng đến trang đăng nhập")
+            return redirect(url_for('login_page'))
+        except jwt.InvalidTokenError:
+            # Token không hợp lệ
+            logger.warning(f"Token không hợp lệ, chuyển hướng đến trang đăng nhập")
+            return redirect(url_for('login_page'))
+        except Exception as e:
+            # Lỗi khác
+            logger.error(f"Lỗi xác thực token: {str(e)}")
             return redirect(url_for('login_page'))
         
         return f(current_user, *args, **kwargs)
@@ -67,6 +78,16 @@ def home():
 @app.route('/login')
 def login_page():
     """Hiển thị trang đăng nhập/đăng ký"""
+    # Kiểm tra nếu đã có token hợp lệ thì chuyển hướng đến trang chat
+    token = request.cookies.get('token')
+    if token:
+        try:
+            data = jwt.decode(token, SECRET_KEY, algorithms=["HS256"])
+            return redirect(url_for('chat_page'))
+        except:
+            # Token không hợp lệ, tiếp tục hiển thị trang đăng nhập
+            pass
+    
     return render_template('login.html')
 
 @app.route('/chat')
@@ -92,4 +113,11 @@ if __name__ == '__main__':
     
     # Khởi động ứng dụng
     logger.info(f"Khởi động ứng dụng trên cổng {port}, chế độ debug: {debug}")
+    logger.info(f"Kiểu lưu trữ: {storage_service.storage_type}")
+    
+    if storage_service.storage_type == "mongodb":
+        logger.info("Đã kết nối thành công với MongoDB")
+    else:
+        logger.warning("Sử dụng lưu trữ file. Để sử dụng MongoDB, hãy đặt biến môi trường MONGODB_URI")
+    
     app.run(host='0.0.0.0', port=port, debug=debug)

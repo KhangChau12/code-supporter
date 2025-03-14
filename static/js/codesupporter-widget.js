@@ -1,5 +1,6 @@
 /**
  * Code Supporter Widget - JavaScript cho tích hợp vào trang web
+ * Cập nhật: Thêm tính năng theo dõi người dùng qua user_id
  */
 (function() {
   // Hàm tạo widget
@@ -16,7 +17,9 @@
         maxHeight: options.maxHeight || '500px',
         width: options.width || '350px',
         showOnInit: options.showOnInit || false,
-        sessionId: options.sessionId || `session-${Date.now()}`
+        sessionId: options.sessionId || `session-${Date.now()}`,
+        userId: options.userId || null,  // ID của người dùng từ hệ thống của bạn
+        userInfo: options.userInfo || null  // Thông tin bổ sung về người dùng
       };
       
       this.conversationHistory = [];
@@ -43,6 +46,11 @@
       // Hiển thị widget nếu được cấu hình
       if (this.config.showOnInit) {
         this.toggleChatWindow(true);
+      }
+      
+      // Tạo user_id ngẫu nhiên nếu không được cung cấp
+      if (!this.config.userId) {
+        this.config.userId = `anonymous-${this.config.sessionId}`;
       }
     }
     
@@ -286,6 +294,13 @@
           position: relative;
         }
         
+        .cs-branding {
+          font-size: 11px;
+          text-align: center;
+          padding: 5px;
+          opacity: 0.7;
+        }
+        
         @media (max-width: 768px) {
           .cs-widget-container {
             ${this.config.position.includes('bottom') ? 'bottom: 10px;' : 'top: 10px;'}
@@ -361,6 +376,12 @@
       inputContainer.appendChild(this.sendButton);
       
       this.chatWindow.appendChild(inputContainer);
+      
+      // Thêm branding
+      const branding = document.createElement('div');
+      branding.className = 'cs-branding';
+      branding.textContent = 'Powered by Code Supporter';
+      this.chatWindow.appendChild(branding);
       
       // Thêm vào container
       this.container.appendChild(this.chatWindow);
@@ -538,14 +559,26 @@
         headers['X-API-Key'] = this.config.apiKey;
       }
       
+      // Chuẩn bị dữ liệu gửi đi
+      const requestData = {
+        message: message,
+        conversation_history: this.conversationHistory.slice(-10), // Gửi 10 tin nhắn gần nhất
+        session_id: this.config.sessionId
+      };
+      
+      // Thêm user_id và user_info nếu có
+      if (this.config.userId) {
+        requestData.user_id = this.config.userId;
+      }
+      
+      if (this.config.userInfo) {
+        requestData.user_info = this.config.userInfo;
+      }
+      
       const response = await fetch(this.config.apiUrl, {
         method: 'POST',
         headers: headers,
-        body: JSON.stringify({
-          message: message,
-          conversation_history: this.conversationHistory.slice(-10), // Gửi 10 tin nhắn gần nhất
-          session_id: this.config.sessionId
-        })
+        body: JSON.stringify(requestData)
       });
       
       if (!response.ok) {
@@ -553,6 +586,25 @@
       }
       
       return await response.json();
+    }
+    
+    // Phương thức để thiết lập hoặc cập nhật userId
+    setUserId(userId, userInfo = null) {
+      this.config.userId = userId;
+      if (userInfo) {
+        this.config.userInfo = userInfo;
+      }
+    }
+    
+    // Phương thức để xóa lịch sử trò chuyện
+    clearConversation() {
+      this.conversationHistory = [];
+      this.messagesContainer.innerHTML = '';
+      
+      // Thêm lại tin nhắn chào mừng
+      if (this.config.initialMessage) {
+        this.addMessage(this.config.initialMessage, 'bot');
+      }
     }
   }
   

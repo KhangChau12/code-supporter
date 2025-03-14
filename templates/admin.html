@@ -111,6 +111,34 @@
                             </div>
                         </div>
                     </div>
+                    
+                    <!-- Thêm danh sách API keys hiện có -->
+                    <div class="api-keys-list">
+                        <h3>API Keys Hiện Có</h3>
+                        <div class="api-keys-container" id="api-keys-container">
+                            <div class="loading-indicator" id="api-keys-loading">
+                                <div class="spinner"></div>
+                                <p>Đang tải danh sách API keys...</p>
+                            </div>
+                            <table class="api-keys-table" id="api-keys-table" style="display: none;">
+                                <thead>
+                                    <tr>
+                                        <th>Tên</th>
+                                        <th>API Key</th>
+                                        <th>Quyền hạn</th>
+                                        <th>Ngày tạo</th>
+                                        <th>Lần sử dụng cuối</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="api-keys-table-body">
+                                    <!-- Nội dung được thêm bằng JavaScript -->
+                                </tbody>
+                            </table>
+                            <div class="no-data" id="no-api-keys" style="display: none;">
+                                <p>Bạn chưa có API Key nào. Hãy tạo API Key mới để bắt đầu.</p>
+                            </div>
+                        </div>
+                    </div>
                 </section>
             </div>
             
@@ -158,6 +186,30 @@ const chatbot = window.initCodeSupporter({
     initialMessage: 'Xin chào! Tôi có thể giúp gì cho bạn với bài tập lập trình?'
 });
 </code></pre>
+
+                        <!-- Thêm phần theo dõi người dùng -->
+                        <h3>4. Theo dõi người dùng (Tùy chọn)</h3>
+                        <p>Nếu bạn muốn theo dõi người dùng đang sử dụng chatbot, hãy thêm tham số <code>user_id</code> và <code>user_info</code> khi gửi yêu cầu:</p>
+                        <pre><code>// Sử dụng API trực tiếp để thêm thông tin người dùng
+fetch('{{ request.url_root }}api/chat/public', {
+    method: 'POST',
+    headers: {
+        'Content-Type': 'application/json',
+        'X-API-Key': 'YOUR_API_KEY_HERE'
+    },
+    body: JSON.stringify({
+        message: "Tin nhắn từ người dùng",
+        user_id: "user123", // ID định danh người dùng của bạn
+        user_info: {
+            name: "Nguyễn Văn A",
+            email: "nguyenvana@example.com",
+            role: "student"
+        }
+    })
+})
+.then(response => response.json())
+.then(data => console.log(data));
+</code></pre>
                     </div>
                 </section>
             </div>
@@ -165,7 +217,71 @@ const chatbot = window.initCodeSupporter({
             <div id="analytics-tab" class="admin-tab-content">
                 <section class="admin-section">
                     <h2>Phân tích dữ liệu</h2>
-                    <p>Tính năng này sẽ sớm được cập nhật.</p>
+                    
+                    <!-- Thống kê sử dụng API -->
+                    <div class="analytics-container">
+                        <h3>Thống kê sử dụng API</h3>
+                        
+                        <!-- Chọn API Key để phân tích -->
+                        <div class="form-group">
+                            <label for="analytics-api-key">Chọn API Key</label>
+                            <select id="analytics-api-key">
+                                <option value="">Tất cả API Keys</option>
+                                <!-- Các lựa chọn API key sẽ được thêm bằng JavaScript -->
+                            </select>
+                            <button id="load-analytics" class="secondary-button">Tải dữ liệu</button>
+                        </div>
+                        
+                        <!-- Hiển thị thống kê -->
+                        <div class="analytics-data" id="analytics-data" style="display: none;">
+                            <div class="analytics-cards">
+                                <div class="analytics-card">
+                                    <h4>Tổng người dùng</h4>
+                                    <div class="analytics-value" id="total-users">0</div>
+                                </div>
+                                <div class="analytics-card">
+                                    <h4>Tổng yêu cầu</h4>
+                                    <div class="analytics-value" id="total-requests">0</div>
+                                </div>
+                                <div class="analytics-card">
+                                    <h4>Người dùng trong 24h</h4>
+                                    <div class="analytics-value" id="active-users-24h">0</div>
+                                </div>
+                                <div class="analytics-card">
+                                    <h4>Người dùng trong 7 ngày</h4>
+                                    <div class="analytics-value" id="active-users-7d">0</div>
+                                </div>
+                            </div>
+                            
+                            <!-- Danh sách người dùng -->
+                            <div class="api-users-list">
+                                <h4>Người dùng gần đây</h4>
+                                <table class="api-users-table">
+                                    <thead>
+                                        <tr>
+                                            <th>ID</th>
+                                            <th>Lần đầu sử dụng</th>
+                                            <th>Lần cuối sử dụng</th>
+                                            <th>Tổng yêu cầu</th>
+                                            <th>Thông tin</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="api-users-table-body">
+                                        <!-- Nội dung được thêm bằng JavaScript -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                        
+                        <div class="loading-indicator" id="analytics-loading" style="display: none;">
+                            <div class="spinner"></div>
+                            <p>Đang tải dữ liệu phân tích...</p>
+                        </div>
+                        
+                        <div class="no-data" id="no-analytics-data" style="display: none;">
+                            <p>Chưa có dữ liệu phân tích nào cho API key này.</p>
+                        </div>
+                    </div>
                 </section>
             </div>
         </main>

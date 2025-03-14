@@ -11,7 +11,24 @@ document.addEventListener('DOMContentLoaded', function() {
     const apiKeyValue = document.getElementById('api-key-value');
     const apiSecretValue = document.getElementById('api-secret-value');
     
-    // Kiểm tra các phần tử DOM tồn tại trước khi thêm event listeners
+    // Phần tử cho danh sách API keys
+    const apiKeysContainer = document.getElementById('api-keys-container');
+    const apiKeysLoading = document.getElementById('api-keys-loading');
+    const apiKeysTable = document.getElementById('api-keys-table');
+    const apiKeysTableBody = document.getElementById('api-keys-table-body');
+    const noApiKeys = document.getElementById('no-api-keys');
+    
+    // Phần tử cho phân tích dữ liệu
+    const analyticsApiKeySelect = document.getElementById('analytics-api-key');
+    const loadAnalyticsButton = document.getElementById('load-analytics');
+    const analyticsData = document.getElementById('analytics-data');
+    const analyticsLoading = document.getElementById('analytics-loading');
+    const noAnalyticsData = document.getElementById('no-analytics-data');
+    const totalUsers = document.getElementById('total-users');
+    const totalRequests = document.getElementById('total-requests');
+    const activeUsers24h = document.getElementById('active-users-24h');
+    const activeUsers7d = document.getElementById('active-users-7d');
+    const apiUsersTableBody = document.getElementById('api-users-table-body');
     
     // Kiểm tra và áp dụng theme
     const theme = localStorage.getItem('theme') || 'dark';
@@ -36,6 +53,9 @@ document.addEventListener('DOMContentLoaded', function() {
             window.location.href = '/login';
         });
     }
+    
+    // Tải danh sách API keys khi trang được tải
+    loadApiKeys();
     
     // Xử lý tạo API key
     if (createApiKeyButton && apiKeyNameInput) {
@@ -90,6 +110,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 
                 // Reset form
                 apiKeyNameInput.value = '';
+                
+                // Cập nhật danh sách API keys
+                loadApiKeys();
+                
+                // Cập nhật danh sách API keys trong dropdown phân tích
+                loadApiKeysForAnalytics();
             })
             .catch(error => {
                 console.error('Error:', error);
@@ -100,6 +126,14 @@ document.addEventListener('DOMContentLoaded', function() {
                 createApiKeyButton.disabled = false;
                 createApiKeyButton.textContent = 'Tạo API Key';
             });
+        });
+    }
+    
+    // Xử lý phân tích dữ liệu
+    if (loadAnalyticsButton) {
+        loadAnalyticsButton.addEventListener('click', function() {
+            const apiKey = analyticsApiKeySelect.value;
+            loadAnalytics(apiKey);
         });
     }
     
@@ -168,6 +202,11 @@ document.addEventListener('DOMContentLoaded', function() {
                         targetContent.classList.add('active');
                     }
                 }
+                
+                // Nếu chuyển sang tab phân tích, tải danh sách API keys cho dropdown
+                if (targetId === 'analytics-tab') {
+                    loadApiKeysForAnalytics();
+                }
             });
         });
     }
@@ -182,5 +221,264 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
         return null;
+    }
+    
+    // Hàm tải danh sách API keys
+    function loadApiKeys() {
+        if (!apiKeysContainer || !apiKeysLoading || !apiKeysTable || !apiKeysTableBody || !noApiKeys) {
+            return;
+        }
+        
+        // Hiển thị loading
+        apiKeysLoading.style.display = 'flex';
+        apiKeysTable.style.display = 'none';
+        noApiKeys.style.display = 'none';
+        
+        // Gọi API để lấy danh sách API keys
+        fetch('/api/apikey/list', {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${getToken()}`
+            }
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Lỗi kết nối với server');
+            }
+            return response.json();
+        })
+        .then(data => {
+            // Xóa dữ liệu cũ
+            apiKeysTableBody.innerHTML = '';
+            
+            // Kiểm tra có dữ liệu không
+            if (data.api_keys && data.api_keys.length > 0) {
+                // Hiển thị bảng
+                apiKeysTable.style.display = 'table';
+                noApiKeys.style.display = 'none';
+                
+                // Thêm dữ liệu vào bảng
+                data.api_keys.forEach(key => {
+                    const row = document.createElement('tr');
+                    
+                    // Cột Tên
+                    const nameCell = document.createElement('td');
+                    nameCell.textContent = key.name;
+                    row.appendChild(nameCell);
+                    
+                    // Cột API Key
+                    const keyCell = document.createElement('td');
+                    keyCell.textContent = key.key;
+                    row.appendChild(keyCell);
+                    
+                    // Cột Quyền hạn
+                    const permissionsCell = document.createElement('td');
+                    permissionsCell.textContent = key.permissions.join(', ');
+                    row.appendChild(permissionsCell);
+                    
+                    // Cột Ngày tạo
+                    const createdAtCell = document.createElement('td');
+                    createdAtCell.textContent = formatDate(key.created_at);
+                    row.appendChild(createdAtCell);
+                    
+                    // Cột Lần sử dụng cuối
+                    const lastUsedCell = document.createElement('td');
+                    lastUsedCell.textContent = key.last_used ? formatDate(key.last_used) : 'Chưa sử dụng';
+                    row.appendChild(lastUsedCell);
+                    
+                    apiKeysTableBody.appendChild(row);
+                });
+            } else {
+                // Hiển thị không có dữ liệu
+                apiKeysTable.style.display = 'none';
+                noApiKeys.style.display = 'block';
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            // Hiển thị thông báo lỗi
+            apiKeysTable.style.display = 'none';
+            noApiKeys.style.display = 'block';
+            noApiKeys.querySelector('p').textContent = 'Đã xảy ra lỗi khi tải danh sách API keys.';
+        })
+        .finally(() => {
+            // Ẩn loading
+            apiKeysLoading.style.display = 'none';
+        });
+    }
+    
+    // Hàm tải danh sách API keys cho dropdown phân tích
+    function loadApiKeysForAnalytics() {
+        if (!analyticsApiKeySelect) {
+            return;
+        }
+        
+        // Gọi API để lấy danh sách API keys
+        fetch('/api/apikey/list', {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${getToken()}`
+            }
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Lỗi kết nối với server');
+            }
+            return response.json();
+        })
+        .then(data => {
+            // Lưu lại giá trị đang chọn
+            const selectedValue = analyticsApiKeySelect.value;
+            
+            // Xóa tất cả options trừ option đầu tiên
+            while (analyticsApiKeySelect.options.length > 1) {
+                analyticsApiKeySelect.remove(1);
+            }
+            
+            // Thêm options mới
+            if (data.api_keys && data.api_keys.length > 0) {
+                data.api_keys.forEach(key => {
+                    const option = document.createElement('option');
+                    option.value = key.key;
+                    option.textContent = `${key.name} (${key.key})`;
+                    analyticsApiKeySelect.appendChild(option);
+                });
+                
+                // Khôi phục giá trị đang chọn nếu có
+                if (selectedValue) {
+                    analyticsApiKeySelect.value = selectedValue;
+                }
+            }
+        })
+        .catch(error => {
+            console.error('Error loading API keys for analytics:', error);
+        });
+    }
+    
+    // Hàm tải dữ liệu phân tích
+    function loadAnalytics(apiKey) {
+        if (!analyticsData || !analyticsLoading || !noAnalyticsData || !apiUsersTableBody) {
+            return;
+        }
+        
+        // Hiển thị loading
+        analyticsLoading.style.display = 'flex';
+        analyticsData.style.display = 'none';
+        noAnalyticsData.style.display = 'none';
+        
+        // Tạo URL với tham số query nếu có
+        let url = '/api/apikey/analytics';
+        if (apiKey) {
+            url += `?api_key=${apiKey}`;
+        }
+        
+        // Gọi API để lấy dữ liệu phân tích
+        fetch(url, {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${getToken()}`
+            }
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Lỗi kết nối với server');
+            }
+            return response.json();
+        })
+        .then(data => {
+            // Kiểm tra có dữ liệu không
+            if (data.total_users > 0) {
+                // Cập nhật thống kê
+                totalUsers.textContent = data.total_users;
+                totalRequests.textContent = data.total_requests;
+                activeUsers24h.textContent = data.active_users_24h;
+                activeUsers7d.textContent = data.active_users_7d;
+                
+                // Xóa dữ liệu cũ
+                apiUsersTableBody.innerHTML = '';
+                
+                // Thêm dữ liệu vào bảng
+                data.users.forEach(user => {
+                    const row = document.createElement('tr');
+                    
+                    // Cột ID
+                    const idCell = document.createElement('td');
+                    idCell.textContent = user.user_id;
+                    row.appendChild(idCell);
+                    
+                    // Cột Lần đầu sử dụng
+                    const firstSeenCell = document.createElement('td');
+                    firstSeenCell.textContent = formatDate(user.first_seen);
+                    row.appendChild(firstSeenCell);
+                    
+                    // Cột Lần cuối sử dụng
+                    const lastActiveCell = document.createElement('td');
+                    lastActiveCell.textContent = formatDate(user.last_active);
+                    row.appendChild(lastActiveCell);
+                    
+                    // Cột Tổng yêu cầu
+                    const totalRequestsCell = document.createElement('td');
+                    totalRequestsCell.textContent = user.total_requests;
+                    row.appendChild(totalRequestsCell);
+                    
+                    // Cột Thông tin
+                    const userInfoCell = document.createElement('td');
+                    if (user.user_info) {
+                        // Hiển thị thông tin người dùng dưới dạng JSON
+                        const infoText = JSON.stringify(user.user_info, null, 2);
+                        userInfoCell.innerHTML = `<pre>${infoText}</pre>`;
+                    } else {
+                        userInfoCell.textContent = 'Không có';
+                    }
+                    row.appendChild(userInfoCell);
+                    
+                    apiUsersTableBody.appendChild(row);
+                });
+                
+                // Hiển thị dữ liệu
+                analyticsData.style.display = 'block';
+                noAnalyticsData.style.display = 'none';
+            } else {
+                // Hiển thị không có dữ liệu
+                analyticsData.style.display = 'none';
+                noAnalyticsData.style.display = 'block';
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            // Hiển thị thông báo lỗi
+            analyticsData.style.display = 'none';
+            noAnalyticsData.style.display = 'block';
+            noAnalyticsData.querySelector('p').textContent = 'Đã xảy ra lỗi khi tải dữ liệu phân tích.';
+        })
+        .finally(() => {
+            // Ẩn loading
+            analyticsLoading.style.display = 'none';
+        });
+    }
+    
+    // Hàm định dạng ngày tháng
+    function formatDate(dateString) {
+        if (!dateString) return 'N/A';
+        
+        // Chuyển đổi chuỗi thành object Date
+        const date = new Date(dateString);
+        
+        // Kiểm tra ngày hợp lệ
+        if (isNaN(date.getTime())) {
+            return dateString;
+        }
+        
+        // Định dạng ngày giờ
+        return new Intl.DateTimeFormat('vi-VN', {
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit'
+        }).format(date);
     }
 });
