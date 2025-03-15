@@ -1,4 +1,4 @@
-// chat.js - Xử lý chức năng chat với hỗ trợ streaming cải tiến
+// chat.js - Xử lý chức năng chat với hiệu ứng typing mượt mà
 document.addEventListener('DOMContentLoaded', function() {
     // Lấy các phần tử DOM
     const messagesContainer = document.getElementById('messages');
@@ -11,7 +11,8 @@ document.addEventListener('DOMContentLoaded', function() {
     let savedSnippets = JSON.parse(localStorage.getItem('savedCodeSnippets')) || [];
     let isWaitingForResponse = false;
     let currentStreamBuffer = '';
-    let streamUpdateInterval = null;
+    let typingAnimationTimeout = null;
+    let typingSpeed = 10; // Tốc độ hiển thị mặc định (ms)
     
     // Kiểm tra các phần tử DOM tồn tại trước khi thêm event listeners
     if (themeToggle) {
@@ -89,69 +90,13 @@ document.addEventListener('DOMContentLoaded', function() {
         streamChatResponse(message, typingIndicator);
     }
 
-    // Hàm xử lý stream chat response CẢI TIẾN
+    // Hàm xử lý stream chat response với hiệu ứng typing
     function streamChatResponse(message, typingIndicator) {
-        // Chuẩn bị response container
-        const responseMsgDiv = document.createElement('div');
-        responseMsgDiv.className = 'message bot-message';
-        const contentDiv = document.createElement('div');
-        contentDiv.className = 'message-content';
-        responseMsgDiv.appendChild(contentDiv);
-        
-        // Thêm timestamp
-        const timeDiv = document.createElement('div');
-        timeDiv.className = 'message-time';
-        timeDiv.textContent = formatTime(new Date());
-        responseMsgDiv.appendChild(timeDiv);
-        
-        // Biến lưu nội dung tích lũy 
-        currentStreamBuffer = '';
-        let lastProcessedLength = 0;
-        let pendingChunks = [];
-        let isProcessing = false;
-        
-        // Bộ đếm để giúp ổn định tần suất cập nhật DOM
-        let updateCounter = 0;
-        
-        // Xóa typing indicator và thêm response container vào messages
-        if (typingIndicator) typingIndicator.remove();
-        messagesContainer.appendChild(responseMsgDiv);
-        messagesContainer.scrollTop = messagesContainer.scrollHeight;
-        
-        // Thiết lập interval để cập nhật nội dung trơn tru hơn
-        // Khoảng 60ms (khoảng 16-17 frames/giây) là tốc độ tốt cho streaming mượt mà
-        if (streamUpdateInterval) {
-            clearInterval(streamUpdateInterval);
-        }
-        
-        streamUpdateInterval = setInterval(() => {
-            if (pendingChunks.length > 0 && !isProcessing) {
-                isProcessing = true;
-                
-                // Xử lý tất cả các chunk đang chờ
-                const chunks = [...pendingChunks];
-                pendingChunks = [];
-                
-                // Cập nhật buffer từ các chunk
-                chunks.forEach(chunk => {
-                    currentStreamBuffer += chunk;
-                });
-                
-                // Chỉ cập nhật DOM khi có nội dung mới đáng kể hoặc theo chu kỳ
-                if (currentStreamBuffer.length - lastProcessedLength > 2 || updateCounter % 3 === 0) {
-                    // Cập nhật nội dung với định dạng sơ bộ (hiệu suất cao hơn)
-                    contentDiv.innerHTML = simpleMarkdownFormat(currentStreamBuffer);
-                    lastProcessedLength = currentStreamBuffer.length;
-                    
-                    // Đảm bảo scroll luôn ở cuối
-                    messagesContainer.scrollTop = messagesContainer.scrollHeight;
-                }
-                
-                updateCounter++;
-                isProcessing = false;
-            }
-        }, 60);
-        
+        let textBuffer = ''; // Buffer văn bản đã nhận nhưng chưa hiển thị
+        let isDisplaying = false; // Đang trong quá trình hiển thị hay không
+        let displayedText = ''; // Văn bản đã hiển thị
+        let responseContainer = null; // Container của phản hồi
+
         // Gửi request đến endpoint stream
         fetch('/api/chat/stream', {
             method: 'POST',
@@ -169,44 +114,25 @@ document.addEventListener('DOMContentLoaded', function() {
             const reader = response.body.getReader();
             const decoder = new TextDecoder();
             
+            // Tạo message container cho bot response
+            if (!responseContainer) {
+                responseContainer = createResponseContainer();
+            }
+            
             function processStream({ done, value }) {
                 if (done) {
-                    // Hoàn thành, cập nhật final formatting và bật lại input
-                    clearInterval(streamUpdateInterval);
+                    // Đảm bảo tất cả text đã được hiển thị
+                    if (textBuffer.length > 0) {
+                        // Thêm phần văn bản còn lại ngay lập tức
+                        displayedText += textBuffer;
+                        
+                        // Cập nhật nội dung với định dạng đầy đủ
+                        const contentDiv = responseContainer.querySelector('.message-content');
+                        contentDiv.innerHTML = formatMarkdown(displayedText);
+                    }
                     
-                    // Xử lý formatting cuối cùng khi stream kết thúc
-                    setTimeout(() => {
-                        contentDiv.innerHTML = formatMarkdown(currentStreamBuffer);
-                        
-                        // Thêm nút copy cho code blocks
-                        responseMsgDiv.querySelectorAll('pre').forEach(pre => {
-                            if (!pre.querySelector('.copy-code-btn')) {
-                                const copyBtn = document.createElement('button');
-                                copyBtn.className = 'copy-code-btn';
-                                copyBtn.textContent = 'Copy';
-                                copyBtn.addEventListener('click', () => {
-                                    const code = pre.querySelector('code').textContent;
-                                    navigator.clipboard.writeText(code).then(() => {
-                                        copyBtn.textContent = 'Copied!';
-                                        setTimeout(() => {
-                                            copyBtn.textContent = 'Copy';
-                                        }, 2000);
-                                    });
-                                });
-                                pre.appendChild(copyBtn);
-                            }
-                        });
-                        
-                        // Highlight code nếu có thư viện Prism
-                        if (window.Prism) {
-                            responseMsgDiv.querySelectorAll('pre code').forEach(block => {
-                                Prism.highlightElement(block);
-                            });
-                        }
-                        
-                        // Đảm bảo scroll cuối cùng
-                        messagesContainer.scrollTop = messagesContainer.scrollHeight;
-                    }, 50);
+                    // Hoàn thiện định dạng và thêm các tính năng tương tác
+                    finalizeResponse(responseContainer, displayedText);
                     
                     // Kích hoạt lại input và nút gửi
                     messageInput.disabled = false;
@@ -226,9 +152,15 @@ document.addEventListener('DOMContentLoaded', function() {
                         try {
                             const data = JSON.parse(event.substring(6));
                             
-                            if (!data.done) {
-                                // Thêm chunk vào pending để xử lý trong interval
-                                pendingChunks.push(data.chunk);
+                            if (!data.done && data.chunk) {
+                                // Thêm text vào buffer
+                                textBuffer += data.chunk;
+                                
+                                // Nếu chưa đang hiển thị, bắt đầu hiệu ứng typing
+                                if (!isDisplaying) {
+                                    isDisplaying = true;
+                                    displayNextCharacter(responseContainer);
+                                }
                             }
                         } catch (e) {
                             console.error('Lỗi xử lý event stream:', e);
@@ -249,9 +181,9 @@ document.addEventListener('DOMContentLoaded', function() {
             // Xóa typing indicator nếu còn
             if (typingIndicator) typingIndicator.remove();
             
-            // Xóa interval
-            if (streamUpdateInterval) {
-                clearInterval(streamUpdateInterval);
+            // Xóa bất kỳ timeout nào đang chờ
+            if (typingAnimationTimeout) {
+                clearTimeout(typingAnimationTimeout);
             }
             
             // Hiển thị thông báo lỗi
@@ -263,37 +195,154 @@ document.addEventListener('DOMContentLoaded', function() {
             messageInput.focus();
             isWaitingForResponse = false;
         });
+
+        // Tạo container cho phản hồi và loại bỏ typing indicator
+        function createResponseContainer() {
+            // Xóa typing indicator nếu có
+            if (typingIndicator) typingIndicator.remove();
+            
+            // Tạo response container
+            const responseMsgDiv = document.createElement('div');
+            responseMsgDiv.className = 'message bot-message';
+            
+            const contentDiv = document.createElement('div');
+            contentDiv.className = 'message-content';
+            responseMsgDiv.appendChild(contentDiv);
+            
+            // Thêm timestamp
+            const timeDiv = document.createElement('div');
+            timeDiv.className = 'message-time';
+            timeDiv.textContent = formatTime(new Date());
+            responseMsgDiv.appendChild(timeDiv);
+            
+            // Thêm vào container
+            messagesContainer.appendChild(responseMsgDiv);
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+            
+            return responseMsgDiv;
+        }
+
+        // Hiển thị từng ký tự một để tạo hiệu ứng typing mượt mà
+        function displayNextCharacter(container) {
+            if (textBuffer.length === 0) {
+                // Nếu hết text trong buffer, đánh dấu là đã ngừng hiển thị
+                isDisplaying = false;
+                return;
+            }
+
+            // Lấy ký tự tiếp theo từ buffer
+            let nextChar = textBuffer[0];
+            textBuffer = textBuffer.substring(1);
+            displayedText += nextChar;
+
+            // Tính tốc độ hiển thị dựa trên ký tự
+            let currentSpeed = calculateTypingSpeed(nextChar);
+            
+            // Đặc biệt xử lý code block để hiển thị đẹp hơn
+            if (isCodeBlockDelimiter(displayedText)) {
+                // Hiển thị cả block code cùng lúc sẽ đẹp hơn
+                let codeBlockContent = extractCodeBlockContent(textBuffer);
+                if (codeBlockContent) {
+                    displayedText += codeBlockContent;
+                    textBuffer = textBuffer.substring(codeBlockContent.length);
+                }
+            }
+
+            // Cập nhật nội dung
+            const contentDiv = container.querySelector('.message-content');
+            contentDiv.innerHTML = simpleMarkdownFormat(displayedText);
+            
+            // Đảm bảo luôn cuộn xuống cuối
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+
+            // Lên lịch hiển thị ký tự tiếp theo
+            typingAnimationTimeout = setTimeout(() => {
+                displayNextCharacter(container);
+            }, currentSpeed);
+        }
+
+        // Tính toán tốc độ typing dựa trên ký tự
+        function calculateTypingSpeed(char) {
+            // Hiệu ứng nghỉ ngắn tại các dấu câu
+            if ('.!?;:'.includes(char)) {
+                return 70; // Tạm dừng lâu hơn tại dấu câu
+            } else if (','.includes(char)) {
+                return 40; // Tạm dừng ngắn tại dấu phẩy
+            } else if (char === '\n') {
+                return 80; // Tạm dừng lâu hơn tại xuống dòng
+            } else if (char === ' ') {
+                return 25; // Dừng ngắn tại khoảng trắng
+            } else {
+                return typingSpeed; // Tốc độ mặc định cho các ký tự khác
+            }
+        }
+
+        // Kiểm tra xem vị trí hiện tại có phải là bắt đầu/kết thúc code block
+        function isCodeBlockDelimiter(text) {
+            return text.endsWith('```');
+        }
+
+        // Trích xuất nội dung code block từ buffer nếu có thể
+        function extractCodeBlockContent(buffer) {
+            // Tìm đoạn code block kết thúc nếu có
+            const endIndex = buffer.indexOf('```');
+            if (endIndex !== -1) {
+                return buffer.substring(0, endIndex + 3);
+            }
+            return null;
+        }
+        
+        // Hoàn thiện định dạng và thêm tính năng tương tác sau khi streaming xong
+        function finalizeResponse(container, text) {
+            const contentDiv = container.querySelector('.message-content');
+            
+            // Cập nhật nội dung với định dạng đầy đủ
+            contentDiv.innerHTML = formatMarkdown(text);
+            
+            // Thêm nút copy cho code blocks
+            container.querySelectorAll('pre').forEach(pre => {
+                if (!pre.querySelector('.copy-code-btn')) {
+                    const copyBtn = document.createElement('button');
+                    copyBtn.className = 'copy-code-btn';
+                    copyBtn.textContent = 'Copy';
+                    copyBtn.addEventListener('click', () => {
+                        const code = pre.querySelector('code').textContent;
+                        navigator.clipboard.writeText(code).then(() => {
+                            copyBtn.textContent = 'Copied!';
+                            setTimeout(() => {
+                                copyBtn.textContent = 'Copy';
+                            }, 2000);
+                        });
+                    });
+                    pre.appendChild(copyBtn);
+                }
+            });
+            
+            // Highlight code nếu có thư viện Prism
+            if (window.Prism) {
+                container.querySelectorAll('pre code').forEach(block => {
+                    Prism.highlightElement(block);
+                });
+            }
+            
+            // Đảm bảo scroll cuối cùng
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        }
     }
     
-    // Hàm định dạng markdown đơn giản cho streaming (chỉ xử lý cơ bản)
+    // Hàm định dạng markdown đơn giản cho streaming
     function simpleMarkdownFormat(text) {
         // Phát hiện và xử lý code blocks
         let formatted = text;
         
-        // Xử lý code blocks trong quá trình stream
+        // Xử lý code blocks
         const codeBlockRegex = /```(\w*)\n([\s\S]*?)```/g;
-        if (codeBlockRegex.test(formatted)) {
-            formatted = formatted.replace(codeBlockRegex, function(match, language, code) {
-                return `<pre><code class="language-${language}">${escapeHTML(code)}</code></pre>`;
-            });
-        } else {
-            // Nếu code block chưa đóng, tìm lần xuất hiện cuối cùng của ```
-            const lastCodeBlockStart = formatted.lastIndexOf('```');
-            if (lastCodeBlockStart !== -1 && (formatted.substring(lastCodeBlockStart).split('\n').length > 1)) {
-                // Bỏ qua những phần code block chưa hoàn thành để tránh bị vỡ giao diện
-                const beforeLastCodeBlock = formatted.substring(0, lastCodeBlockStart);
-                formatted = beforeLastCodeBlock + '<pre><code>' + 
-                           escapeHTML(formatted.substring(lastCodeBlockStart + 3)) + '</code></pre>';
-            }
-        }
+        formatted = formatted.replace(codeBlockRegex, function(match, language, code) {
+            return `<pre><code class="language-${language}">${escapeHTML(code)}</code></pre>`;
+        });
         
-        // Xử lý inline code - làm cho cẩn thận để không bị lỗi nửa chừng
-        let inlineCodeMatches = formatted.match(/`([^`]+)`/g);
-        if (inlineCodeMatches) {
-            inlineCodeMatches.forEach(match => {
-                formatted = formatted.replace(match, '<code>' + escapeHTML(match.slice(1, -1)) + '</code>');
-            });
-        }
+        // Xử lý inline code
+        formatted = formatted.replace(/`([^`]+)`/g, '<code>$1</code>');
         
         // Xử lý bold
         formatted = formatted.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
