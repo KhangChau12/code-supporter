@@ -115,7 +115,7 @@ class CodeSupporterService:
                 params.update(custom_params)
             
             # Gọi API với Together phiên bản mới
-            response = self.client.completions.create(
+            response = self.client.chat.completions.create(
                 model=self.model_name,
                 messages=messages,
                 **params
