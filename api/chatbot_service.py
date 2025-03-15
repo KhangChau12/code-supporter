@@ -71,6 +71,34 @@ class CodeSupporterService:
             "Ngoài việc sinh code, bạn cũng có thể giải thích các thắc mắc liên quan đến lập trình và nếu người dùng có hỏi điều gì ngoài lập trình thì bạn vẫn đối thoại được như bình thường"
         )
     
+    def _format_messages_to_prompt(self, messages: List[Dict[str, str]]) -> str:
+        """
+        Chuyển đổi danh sách messages thành prompt dạng văn bản cho API
+        
+        Args:
+            messages (list): Danh sách các tin nhắn với role và content
+            
+        Returns:
+            str: Prompt dạng văn bản
+        """
+        prompt = ""
+        
+        for msg in messages:
+            role = msg["role"]
+            content = msg["content"]
+            
+            if role == "system":
+                prompt += f"<|im_start|>system\n{content}<|im_end|>\n"
+            elif role == "user":
+                prompt += f"<|im_start|>user\n{content}<|im_end|>\n"
+            elif role == "assistant":
+                prompt += f"<|im_start|>assistant\n{content}<|im_end|>\n"
+        
+        # Thêm phần bắt đầu cho phản hồi của assistant
+        prompt += "<|im_start|>assistant\n"
+        
+        return prompt
+    
     @backoff.on_exception(backoff.expo, 
                          (Exception),
                          max_tries=3,
@@ -114,16 +142,28 @@ class CodeSupporterService:
             if custom_params:
                 params.update(custom_params)
             
+            # Chuyển đổi messages thành prompt dạng văn bản
+            prompt = self._format_messages_to_prompt(messages)
+            
             # Gọi API với Together phiên bản mới
-            response = self.client.chat.completions.create(
+            response = self.client.completions.create(
                 model=self.model_name,
-                messages=messages,
+                prompt=prompt,
                 **params
             )
             
             elapsed_time = time.time() - start_time
-            # Trích xuất phản hồi theo cách mới
-            bot_response = response.choices[0].message.content
+            
+            # Trích xuất phản hồi từ output
+            bot_response = response.choices[0].text.strip()
+            # Loại bỏ token kết thúc nếu có
+            for stop_token in params.get('stop', []):
+                if bot_response.endswith(stop_token):
+                    bot_response = bot_response[:-(len(stop_token))]
+            
+            # Loại bỏ token im_end nếu có
+            if "<|im_end|>" in bot_response:
+                bot_response = bot_response.split("<|im_end|>")[0].strip()
             
             logger.info(f"Nhận phản hồi từ mô hình sau {elapsed_time:.2f}s: {bot_response[:50]}...")
             
@@ -188,20 +228,37 @@ class CodeSupporterService:
             # Đảm bảo stream=True cho phản hồi theo stream
             params["stream"] = True
             
+            # Chuyển đổi messages thành prompt dạng văn bản
+            prompt = self._format_messages_to_prompt(messages)
+            
             # Gọi API với stream sử dụng Together phiên bản mới
-            response_stream = self.client.chat.completions.create(
+            response_stream = self.client.completions.create(
                 model=self.model_name,
-                messages=messages,
+                prompt=prompt,
                 **params
             )
             
             chunk_count = 0
+            accumulated_text = ""
+            
             for chunk in response_stream:
                 chunk_count += 1
-                if hasattr(chunk.choices[0], 'delta') and hasattr(chunk.choices[0].delta, 'content'):
-                    content = chunk.choices[0].delta.content
-                    if content:
-                        yield content
+                
+                if hasattr(chunk.choices[0], 'text'):
+                    text = chunk.choices[0].text
+                    
+                    if text:
+                        # Check for end tokens and remove them
+                        for stop_token in params.get('stop', []):
+                            if stop_token in text:
+                                text = text.split(stop_token)[0]
+                                
+                        # Check for im_end token
+                        if "<|im_end|>" in text:
+                            text = text.split("<|im_end|>")[0]
+                        
+                        # Only yield new content
+                        yield text
             
             elapsed_time = time.time() - start_time
             logger.info(f"Stream hoàn thành sau {elapsed_time:.2f}s với {chunk_count} chunks")
