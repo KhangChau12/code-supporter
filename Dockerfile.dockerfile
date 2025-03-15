@@ -14,6 +14,7 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 # Cài đặt dependencies
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --upgrade together  # Thêm dòng này để đảm bảo cài đặt phiên bản mới nhất
 
 # Copy toàn bộ mã nguồn vào container
 COPY . .
