@@ -1,8 +1,65 @@
-/* Lava Dark Theme - Modified CSS for Code Supporter
+/* Enhanced lava theming for the chat interface */
+.chat-button, 
+.nav-button,
+a[href="/chat"], 
+a[href="/admin"],
+a.nav-link,
+button#theme-toggle,
+button#logout-button {
+    position: relative;
+    overflow: hidden;
+    background-color: rgba(0, 0, 0, 0.2) !important; /* Transparent background */
+    border: 1px solid rgba(255, 80, 0, 0.3);
+    color: var(--primary-color) !important;
+    box-shadow: 0 0 8px rgba(255, 40, 0, 0.3) !important;
+}
+
+.chat-button:hover, 
+.nav-button:hover,
+a[href="/chat"]:hover, 
+a[href="/admin"]:hover,
+a.nav-link:hover,
+button#theme-toggle:hover,
+button#logout-button:hover {
+    background-color: rgba(255, 80, 0, 0.15) !important;
+    border-color: rgba(255, 80, 0, 0.5);
+    box-shadow: 0 0 12px rgba(255, 40, 0, 0.5) !important;
+    transform: translateY(-1px);
+}
+
+/* For the SVG icons inside these buttons */
+.chat-button svg, 
+.nav-button svg,
+a[href="/chat"] svg, 
+a[href="/admin"] svg,
+a.nav-link svg,
+button#theme-toggle svg,
+button#logout-button svg {
+    fill: var(--primary-color);
+    stroke: var(--primary-color);
+    filter: drop-shadow(0 0 2px rgba(255, 80, 0, 0.5));
+}.input-container {
+    border-top: 2px solid var(--primary-color);
+    box-shadow: 0 -2px 10px rgba(255, 40, 0, 0.2);
+}
+
+#message-input:focus {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 2px rgba(255, 80, 0, 0.3);
+}
+
+/* Username display styling */
+#username-display {
+    color: var(--primary-color) !important;
+    background-color: rgba(255, 80, 0, 0.1); 
+    border: 1px solid rgba(255, 80, 0, 0.3);
+    box-shadow: 0 0 8px rgba(255, 40, 0, 0.3);
+    text-shadow: none;
+}/* Lava Dark Theme - Modified CSS for Code Supporter
  * A dark theme with black, white, and lava orange accents
  */
 
- :root {
+:root {
     /* Lava Dark theme with EXTRA VIBRANT lava orange (default dark) */
     --primary-color: #FF5000; /* More vibrant lava orange primary */
     --primary-hover: #FF6A00; /* Vibrant lava hover */
@@ -54,25 +111,30 @@ body.light-mode {
     box-shadow: 0 2px 10px rgba(255, 40, 0, 0.3);
 }
 
-.brand h1, #username-display, .Code, .Supporter {
+/* Brand/Logo styling - keep text visible with transparent background */
+.brand h1, .Code, .Supporter {
     color: var(--primary-color) !important;
     text-shadow: 0 0 5px rgba(255, 40, 0, 0.3);
 }
 
-.input-container {
-    border-top: 2px solid var(--primary-color);
-    box-shadow: 0 -2px 10px rgba(255, 40, 0, 0.2);
-}
-
-#message-input:focus {
-    border-color: var(--primary-color);
-    box-shadow: 0 0 0 2px rgba(255, 80, 0, 0.3);
-}
-
-/* Glowing effect for the logo and buttons */
-.brand, .nav-link:hover, #theme-toggle:hover, #logout-button:hover {
+/* Fix for hover on navigation buttons to keep text visible */
+.nav-link:hover, #theme-toggle:hover, #logout-button:hover {
+    background-color: rgba(255, 80, 0, 0.2); /* Transparent background */
     color: var(--primary-color) !important;
-    box-shadow: 0 0 15px rgba(255, 80, 0, 0.4);
+    box-shadow: 0 0 8px rgba(255, 80, 0, 0.4);
+    text-shadow: 0 0 5px rgba(255, 40, 0, 0.3);
+}
+
+/* Add shadow to navigation buttons even when not hovered */
+.nav-link, #theme-toggle, #logout-button, .chat-button {
+    box-shadow: 0 0 5px rgba(255, 80, 0, 0.2);
+    transition: all 0.3s ease;
+}
+
+/* Book icon in lava color */
+.brand svg, .brand-logo svg, .logo svg, .app-header svg {
+    fill: var(--primary-color) !important;
+    filter: drop-shadow(0 0 3px rgba(255, 80, 0, 0.5));
 }
 
 /* Add some ultra vibrant lava-themed enhancement classes */
@@ -175,12 +237,32 @@ button[id*="register-button"]:hover {
     background-color: #FF5000;
 }
 
-/* Add gradient background to auth container */
+/* Add lava gradient background to login page - replace the navy blue with lava black */
 .auth-container {
-    background: linear-gradient(135deg, #121212 0%, #1A1A1A 100%),
-                radial-gradient(circle at top right, rgba(255, 69, 0, 0.2) 0%, transparent 50%),
-                radial-gradient(circle at bottom left, rgba(255, 109, 36, 0.2) 0%, transparent 50%);
-    background-blend-mode: normal;
+    background: linear-gradient(135deg, #101010 0%, #1A1A1A 100%),
+                radial-gradient(circle at top right, rgba(255, 80, 0, 0.3) 0%, transparent 50%),
+                radial-gradient(circle at bottom left, rgba(255, 80, 0, 0.3) 0%, transparent 50%) !important;
+    background-blend-mode: normal !important;
+}
+
+/* Make sure the book logo in login screen is lava orange instead of blue */
+.auth-container .logo-container svg,
+.auth-container .logo svg,
+.logo-text,
+.auth-container svg {
+    fill: var(--primary-color) !important;
+    stroke: var(--primary-color) !important;
+    color: var(--primary-color) !important;
+    filter: drop-shadow(0 0 5px rgba(255, 80, 0, 0.5));
+}
+
+/* Use webkit background clip for the gradient text */
+.logo-text, .brand h1 {
+    background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+    -webkit-background-clip: text !important;
+    -webkit-text-fill-color: transparent !important;
+    background-clip: text !important;
+    filter: drop-shadow(0 0 2px rgba(255, 80, 0, 0.3));
 }
 
 /* Special effects for code blocks and other highlights */
@@ -216,5 +298,10 @@ a:hover, .interactive:hover, .clickable:hover, .selectable:hover {
  * 2. Link it in your HTML after the original style.css
  * 3. Or copy the :root variables into your existing style.css
  * 
- * This theme is ULTRA VIBRANT with extra lava orange for maximum impact!
+ * MODIFICATIONS FOR SPECIFIC REQUIREMENTS:
+ * - No orange border around logo (only text is orange)
+ * - Chat/API Keys buttons maintain text visibility on hover
+ * - Added lava-themed shadows to navigation elements
+ * - Login background is now black with lava gradients (not navy)
+ * - Book logo in login screen is now lava orange instead of blue
  */
