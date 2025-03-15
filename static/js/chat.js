@@ -11,7 +11,7 @@ document.addEventListener('DOMContentLoaded', function() {
     let savedSnippets = JSON.parse(localStorage.getItem('savedCodeSnippets')) || [];
     let isWaitingForResponse = false;
     let typingAnimationTimeout = null;
-    let typingSpeed = 10; // Tốc độ hiển thị mặc định (ms)
+    let typingSpeed = 3; // Tốc độ hiển thị mặc định (ms)
     
     // Kiểm tra các phần tử DOM tồn tại trước khi thêm event listeners
     if (themeToggle) {
@@ -279,13 +279,13 @@ document.addEventListener('DOMContentLoaded', function() {
         function calculateTypingSpeed(char) {
             // Hiệu ứng nghỉ ngắn tại các dấu câu
             if ('.!?;:'.includes(char)) {
-                return 70; // Tạm dừng lâu hơn tại dấu câu
+                return 23; // Tạm dừng lâu hơn tại dấu câu
             } else if (','.includes(char)) {
-                return 40; // Tạm dừng ngắn tại dấu phẩy
+                return 13; // Tạm dừng ngắn tại dấu phẩy
             } else if (char === '\n') {
-                return 80; // Tạm dừng lâu hơn tại xuống dòng
+                return 27; // Tạm dừng lâu hơn tại xuống dòng
             } else if (char === ' ') {
-                return 25; // Dừng ngắn tại khoảng trắng
+                return 8; // Dừng ngắn tại khoảng trắng
             } else {
                 return typingSpeed; // Tốc độ mặc định cho các ký tự khác
             }
