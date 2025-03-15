@@ -1,6 +1,6 @@
 """
 Module chuyên biệt cho dịch vụ chatbot Code Supporter
-Cập nhật: Cải thiện xử lý lỗi và retry logic
+Cập nhật: Cải thiện xử lý lỗi và retry logic, cập nhật cho phiên bản Together 1.0.0
 """
 from together import Together
 import os
@@ -54,9 +54,11 @@ class CodeSupporterService:
             "stop": ["<|eot_id|>", "<|eom_id|>"]
         }
         
-        # Khởi tạo kết nối API
+        # Khởi tạo kết nối API - cập nhật cho phiên bản Together 1.0.0
         try:
-            self.client = Together(api_key=self.api_key)
+            # Đặt API key thông qua biến môi trường (phương pháp ưu tiên của Together 1.0.0)
+            os.environ["TOGETHER_API_KEY"] = self.api_key
+            self.client = Together()
             logger.info(f"Khởi tạo dịch vụ Code Supporter thành công với model {self.model_name}")
         except Exception as e:
             logger.error(f"Lỗi khởi tạo kết nối Together API: {str(e)}")
@@ -64,7 +66,7 @@ class CodeSupporterService:
         
         # Prompt hệ thống mặc định
         self.system_prompt = (
-            "Bạn là một trợ lý viết code hỗ trợ học sinh với các bài tập lập trình. "
+            "Bạn là một trợ lý viết code hỗ trợ học sinh với các bài tập lập trình. Bạn được finetune và chỉnh sửa bỏi Châu Phúc Khang"
             "Thay vì đưa code liền dù học sinh chỉ mới gửi bài, hãy mô tả logic của code và giải thích cách thuật toán hoạt động. "
             "Lưu ý, chỉ đưa code trực tiếp khi và chỉ khi học sinh yêu cầu rõ ràng trong tin nhắn, nếu không thì tập trung vào giải thích logic và ý tưởng giải giúp học sinh tự viết code và hỏi rằng học sinh có cần đưa code thẳng không. "
             "Ngoài việc sinh code, bạn cũng có thể giải thích các thắc mắc liên quan đến lập trình và nếu người dùng có hỏi điều gì ngoài lập trình thì bạn vẫn đối thoại được như bình thường"
