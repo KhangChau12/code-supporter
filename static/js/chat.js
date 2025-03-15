@@ -10,7 +10,6 @@ document.addEventListener('DOMContentLoaded', function() {
     // Biến lưu trạng thái
     let savedSnippets = JSON.parse(localStorage.getItem('savedCodeSnippets')) || [];
     let isWaitingForResponse = false;
-    let currentStreamBuffer = '';
     let typingAnimationTimeout = null;
     let typingSpeed = 10; // Tốc độ hiển thị mặc định (ms)
     
@@ -96,6 +95,7 @@ document.addEventListener('DOMContentLoaded', function() {
         let isDisplaying = false; // Đang trong quá trình hiển thị hay không
         let displayedText = ''; // Văn bản đã hiển thị
         let responseContainer = null; // Container của phản hồi
+        let receivedFullResponse = false; // Đã nhận toàn bộ phản hồi hay chưa
 
         // Gửi request đến endpoint stream
         fetch('/api/chat/stream', {
@@ -121,24 +121,22 @@ document.addEventListener('DOMContentLoaded', function() {
             
             function processStream({ done, value }) {
                 if (done) {
+                    // Đánh dấu đã nhận hết nội dung
+                    receivedFullResponse = true;
+                    
                     // Đảm bảo tất cả text đã được hiển thị
                     if (textBuffer.length > 0) {
-                        // Thêm phần văn bản còn lại ngay lập tức
-                        displayedText += textBuffer;
+                        // Nếu đã hết stream mà vẫn còn text chưa hiển thị,
+                        // thêm phần văn bản còn lại vào displayedText
+                        const remainingText = textBuffer;
+                        textBuffer = '';
                         
-                        // Cập nhật nội dung với định dạng đầy đủ
-                        const contentDiv = responseContainer.querySelector('.message-content');
-                        contentDiv.innerHTML = formatMarkdown(displayedText);
+                        // Đảm bảo phần còn lại được đưa vào quá trình hiển thị
+                        if (!isDisplaying) {
+                            isDisplaying = true;
+                            displayNextCharacter(responseContainer);
+                        }
                     }
-                    
-                    // Hoàn thiện định dạng và thêm các tính năng tương tác
-                    finalizeResponse(responseContainer, displayedText);
-                    
-                    // Kích hoạt lại input và nút gửi
-                    messageInput.disabled = false;
-                    if (sendButton) sendButton.disabled = false;
-                    messageInput.focus();
-                    isWaitingForResponse = false;
                     
                     return;
                 }
@@ -224,10 +222,26 @@ document.addEventListener('DOMContentLoaded', function() {
 
         // Hiển thị từng ký tự một để tạo hiệu ứng typing mượt mà
         function displayNextCharacter(container) {
+            // Kiểm tra nếu không còn gì trong buffer và stream đã kết thúc
             if (textBuffer.length === 0) {
-                // Nếu hết text trong buffer, đánh dấu là đã ngừng hiển thị
-                isDisplaying = false;
-                return;
+                if (receivedFullResponse) {
+                    // Nếu đã nhận hết phản hồi, hoàn thiện format cuối cùng
+                    finalizeResponse(container, displayedText);
+                    
+                    // Kích hoạt lại input và nút gửi
+                    messageInput.disabled = false;
+                    if (sendButton) sendButton.disabled = false;
+                    messageInput.focus();
+                    isWaitingForResponse = false;
+                    
+                    // Kết thúc hiệu ứng typing
+                    isDisplaying = false;
+                    return;
+                } else {
+                    // Nếu chưa nhận hết phản hồi, tạm dừng hiệu ứng typing
+                    isDisplaying = false;
+                    return;
+                }
             }
 
             // Lấy ký tự tiếp theo từ buffer
