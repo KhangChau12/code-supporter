@@ -1,6 +1,6 @@
 """
 API Service - Cung cấp RESTful API cho ứng dụng Code Supporter
-Cập nhật: Thêm track API users, xử lý MongoDB tốt hơn
+Cập nhật: Thêm track API users, xử lý MongoDB tốt hơn và hỗ trợ quản lý hội thoại
 """
 from flask import Blueprint, request, jsonify, Response
 import os
@@ -11,6 +11,7 @@ from datetime import datetime, timedelta
 from functools import wraps
 from dotenv import load_dotenv
 from typing import Dict, List, Optional, Any, Union, Tuple
+import uuid
 
 from .chatbot_service import CodeSupporterService
 from .storage_service import StorageService
@@ -99,91 +100,190 @@ def api_key_required(f):
     
     return decorated
 
-# --- Các API endpoint ---
+# --- API endpoints cho quản lý hội thoại ---
 
-@api_bp.route('/health', methods=['GET'])
-def health_check():
-    """API kiểm tra trạng thái hoạt động của hệ thống"""
-    return jsonify({
-        "status": "online",
-        "service": "Code Supporter API",
-        "version": "1.0.0",
-        "timestamp": datetime.now().isoformat(),
-        "storage_type": storage_service.storage_type
-    })
-
-@api_bp.route('/register', methods=['POST'])
-def register():
-    """API đăng ký tài khoản"""
+@api_bp.route('/conversations', methods=['GET'])
+@token_required
+def get_conversations(current_user):
+    """Lấy danh sách tất cả các hội thoại của người dùng"""
     try:
+        # Lấy các tham số query
+        limit = request.args.get('limit', 20, type=int)
+        offset = request.args.get('offset', 0, type=int)
+        
+        # Lấy danh sách hội thoại từ storage service
+        conversations = storage_service.get_conversations(current_user, limit=limit, offset=offset)
+        
+        # Chuẩn bị dữ liệu phản hồi
+        conversations_data = []
+        for conv in conversations:
+            # Lấy một vài tin nhắn gần nhất để tạo preview
+            preview = ""
+            if conv.get("last_message"):
+                preview = conv["last_message"].get("content", "")[:100]  # Giới hạn 100 ký tự cho preview
+            
+            # Định dạng dữ liệu hội thoại
+            conversation_data = {
+                "id": conv.get("id"),
+                "title": conv.get("title") or "Hội thoại không có tiêu đề",
+                "created_at": conv.get("created_at"),
+                "updated_at": conv.get("updated_at"),
+                "message_count": conv.get("message_count", 0),
+                "preview": preview
+            }
+            conversations_data.append(conversation_data)
+        
+        return jsonify({
+            "conversations": conversations_data,
+            "count": len(conversations_data),
+            "total": storage_service.get_conversations_count(current_user)
+        })
+        
+    except Exception as e:
+        logger.error(f"Lỗi khi lấy danh sách hội thoại: {str(e)}")
+        return jsonify({
+            "error": str(e),
+            "status": "error"
+        }), 500
+
+@api_bp.route('/conversations/<conversation_id>', methods=['GET'])
+@token_required
+def get_conversation(current_user, conversation_id):
+    """Lấy chi tiết một hội thoại cụ thể"""
+    try:
+        # Kiểm tra quyền truy cập hội thoại
+        if not storage_service.check_conversation_access(current_user, conversation_id):
+            return jsonify({"error": "Bạn không có quyền truy cập hội thoại này"}), 403
+        
+        # Lấy thông tin hội thoại
+        conversation = storage_service.get_conversation(conversation_id)
+        if not conversation:
+            return jsonify({"error": "Không tìm thấy hội thoại"}), 404
+        
+        # Lấy tin nhắn của hội thoại
+        messages = storage_service.get_conversation_messages(conversation_id)
+        
+        # Chuẩn bị dữ liệu phản hồi
+        conversation_data = {
+            "id": conversation.get("id"),
+            "title": conversation.get("title") or "Hội thoại không có tiêu đề",
+            "created_at": conversation.get("created_at"),
+            "updated_at": conversation.get("updated_at"),
+            "message_count": len(messages)
+        }
+        
+        # Định dạng tin nhắn
+        messages_data = []
+        for message in messages:
+            message_data = {
+                "id": message.get("id"),
+                "role": message.get("role"),
+                "content": message.get("content"),
+                "timestamp": message.get("timestamp")
+            }
+            messages_data.append(message_data)
+        
+        return jsonify({
+            "conversation": conversation_data,
+            "messages": messages_data
+        })
+        
+    except Exception as e:
+        logger.error(f"Lỗi khi lấy chi tiết hội thoại: {str(e)}")
+        return jsonify({
+            "error": str(e),
+            "status": "error"
+        }), 500
+
+@api_bp.route('/conversations/<conversation_id>', methods=['PUT'])
+@token_required
+def update_conversation(current_user, conversation_id):
+    """Cập nhật thông tin hội thoại"""
+    try:
+        # Kiểm tra quyền truy cập hội thoại
+        if not storage_service.check_conversation_access(current_user, conversation_id):
+            return jsonify({"error": "Bạn không có quyền truy cập hội thoại này"}), 403
+        
         data = request.json
+        if not data:
+            return jsonify({"error": "Không có dữ liệu cập nhật"}), 400
         
-        if not data or "username" not in data or "password" not in data:
-            return jsonify({"error": "Thiếu thông tin đăng ký"}), 400
+        # Chỉ cho phép cập nhật một số trường nhất định
+        allowed_fields = ["title"]
+        update_data = {k: v for k, v in data.items() if k in allowed_fields}
         
-        username = data.get("username")
-        password = data.get("password")
+        if not update_data:
+            return jsonify({"error": "Không có trường hợp lệ để cập nhật"}), 400
         
-        # Kiểm tra độ dài username và password
-        if len(username) < 3 or len(password) < 6:
-            return jsonify({"error": "Tên đăng nhập phải có ít nhất 3 ký tự và mật khẩu phải có ít nhất 6 ký tự"}), 400
-        
-        # Tạo tài khoản
-        success, message = storage_service.create_user(username, password)
+        # Cập nhật hội thoại
+        success = storage_service.update_conversation(conversation_id, update_data)
         
         if success:
-            # Tạo token JWT
-            token = jwt.encode({
-                'username': username,
-                'exp': datetime.utcnow() + timedelta(days=1)
-            }, SECRET_KEY, algorithm="HS256")
-            
             return jsonify({
-                "message": message,
-                "token": token
-            }), 201
+                "message": "Cập nhật hội thoại thành công",
+                "status": "success"
+            })
         else:
-            return jsonify({"error": message}), 400
-            
+            return jsonify({"error": "Không thể cập nhật hội thoại"}), 500
+        
     except Exception as e:
-        logger.error(f"Lỗi đăng ký: {str(e)}")
-        return jsonify({"error": f"Lỗi server: {str(e)}"}), 500
+        logger.error(f"Lỗi khi cập nhật hội thoại: {str(e)}")
+        return jsonify({
+            "error": str(e),
+            "status": "error"
+        }), 500
 
-@api_bp.route('/login', methods=['POST'])
-def login():
-    """API đăng nhập"""
+@api_bp.route('/conversations/<conversation_id>', methods=['DELETE'])
+@token_required
+def delete_conversation(current_user, conversation_id):
+    """Xóa một hội thoại"""
     try:
-        data = request.json
+        # Kiểm tra quyền truy cập hội thoại
+        if not storage_service.check_conversation_access(current_user, conversation_id):
+            return jsonify({"error": "Bạn không có quyền truy cập hội thoại này"}), 403
         
-        username = data.get("username")
-        password = data.get("password")
+        # Xóa hội thoại
+        success = storage_service.delete_conversation(conversation_id)
         
-        if not username or not password:
-            return jsonify({"error": "Thiếu tên đăng nhập hoặc mật khẩu"}), 400
-        
-        # Xác thực người dùng
-        if storage_service.authenticate_user(username, password):
-            # Lấy thông tin người dùng (không có mật khẩu)
-            user_info = storage_service.get_user_info(username)
-            
-            # Tạo token JWT
-            token = jwt.encode({
-                'username': username,
-                'exp': datetime.utcnow() + timedelta(days=1)
-            }, SECRET_KEY, algorithm="HS256")
-            
+        if success:
             return jsonify({
-                "message": "Đăng nhập thành công",
-                "token": token,
-                "username": username,
-                "user_info": user_info
-            }), 200
+                "message": "Xóa hội thoại thành công",
+                "status": "success"
+            })
         else:
-            return jsonify({"error": "Tên đăng nhập hoặc mật khẩu không chính xác"}), 401
-            
+            return jsonify({"error": "Không thể xóa hội thoại"}), 500
+        
     except Exception as e:
-        logger.error(f"Lỗi đăng nhập: {str(e)}")
-        return jsonify({"error": f"Lỗi server: {str(e)}"}), 500
+        logger.error(f"Lỗi khi xóa hội thoại: {str(e)}")
+        return jsonify({
+            "error": str(e),
+            "status": "error"
+        }), 500
+
+@api_bp.route('/conversations', methods=['DELETE'])
+@token_required
+def delete_all_conversations(current_user):
+    """Xóa tất cả hội thoại của người dùng"""
+    try:
+        # Xóa tất cả hội thoại
+        success = storage_service.delete_all_conversations(current_user)
+        
+        if success:
+            return jsonify({
+                "message": "Xóa tất cả hội thoại thành công",
+                "status": "success"
+            })
+        else:
+            return jsonify({"error": "Không thể xóa hội thoại"}), 500
+        
+    except Exception as e:
+        logger.error(f"Lỗi khi xóa tất cả hội thoại: {str(e)}")
+        return jsonify({
+            "error": str(e),
+            "status": "error"
+        }), 500
+
+# --- API endpoints cho chat ---
 
 @api_bp.route('/chat', methods=['POST'])
 @token_required
@@ -192,22 +292,38 @@ def chat_authenticated(current_user):
     try:
         data = request.json
         user_message = data.get("message")
+        conversation_id = data.get("conversation_id")  # ID hội thoại nếu tiếp tục hội thoại cũ
         
         if not user_message:
             return jsonify({"error": "Tin nhắn không được để trống"}), 400
         
+        # Kiểm tra quyền truy cập hội thoại nếu có conversation_id
+        if conversation_id and not storage_service.check_conversation_access(current_user, conversation_id):
+            return jsonify({"error": "Bạn không có quyền truy cập hội thoại này"}), 403
+        
         # Lấy lịch sử hội thoại
-        conversation_history = storage_service.get_conversation_history(current_user, limit=10)
+        conversation_history = []
+        if conversation_id:
+            # Nếu có conversation_id, lấy tin nhắn từ hội thoại đó
+            messages = storage_service.get_conversation_messages(conversation_id)
+            conversation_history = [{"role": msg["role"], "content": msg["content"]} for msg in messages]
+        else:
+            # Tạo hội thoại mới nếu không có conversation_id
+            conversation_title = "Hội thoại " + datetime.now().strftime("%d/%m/%Y %H:%M")
+            conversation_id = storage_service.create_conversation(current_user, title=conversation_title)
+        
+        # Lưu tin nhắn người dùng vào hội thoại
+        storage_service.add_message_to_conversation(conversation_id, "user", user_message)
         
         # Gọi service để tạo phản hồi
         bot_reply = chatbot_service.generate_response(user_message, conversation_history)
         
-        # Lưu tin nhắn vào lịch sử
-        storage_service.save_conversation(current_user, "user", user_message)
-        storage_service.save_conversation(current_user, "assistant", bot_reply)
+        # Lưu phản hồi vào hội thoại
+        storage_service.add_message_to_conversation(conversation_id, "assistant", bot_reply)
         
         return jsonify({
             "reply": bot_reply,
+            "conversation_id": conversation_id,
             "status": "success"
         })
         
@@ -225,15 +341,28 @@ def chat_stream(current_user):
     try:
         data = request.json
         user_message = data.get("message")
+        conversation_id = data.get("conversation_id")  # ID hội thoại nếu tiếp tục hội thoại cũ
         
         if not user_message:
             return jsonify({"error": "Tin nhắn không được để trống"}), 400
         
-        # Lấy lịch sử hội thoại
-        conversation_history = storage_service.get_conversation_history(current_user, limit=10)
+        # Kiểm tra quyền truy cập hội thoại nếu có conversation_id
+        if conversation_id and not storage_service.check_conversation_access(current_user, conversation_id):
+            return jsonify({"error": "Bạn không có quyền truy cập hội thoại này"}), 403
         
-        # Lưu tin nhắn người dùng
-        storage_service.save_conversation(current_user, "user", user_message)
+        # Lấy lịch sử hội thoại
+        conversation_history = []
+        if conversation_id:
+            # Nếu có conversation_id, lấy tin nhắn từ hội thoại đó
+            messages = storage_service.get_conversation_messages(conversation_id)
+            conversation_history = [{"role": msg["role"], "content": msg["content"]} for msg in messages]
+        else:
+            # Tạo hội thoại mới nếu không có conversation_id
+            conversation_title = "Hội thoại " + datetime.now().strftime("%d/%m/%Y %H:%M")
+            conversation_id = storage_service.create_conversation(current_user, title=conversation_title)
+        
+        # Lưu tin nhắn người dùng vào hội thoại
+        storage_service.add_message_to_conversation(conversation_id, "user", user_message)
         
         def generate():
             full_response = ""
@@ -244,10 +373,10 @@ def chat_stream(current_user):
                 yield f"data: {json.dumps({'chunk': text_chunk, 'done': False})}\n\n"
             
             # Lưu phản hồi đầy đủ vào lịch sử
-            storage_service.save_conversation(current_user, "assistant", full_response)
+            storage_service.add_message_to_conversation(conversation_id, "assistant", full_response)
             
-            # Gửi thông báo hoàn thành
-            yield f"data: {json.dumps({'chunk': '', 'done': True})}\n\n"
+            # Gửi thông báo conversation_id và hoàn thành
+            yield f"data: {json.dumps({'chunk': '', 'done': True, 'conversation_id': conversation_id})}\n\n"
         
         return Response(generate(), mimetype='text/event-stream')
         
@@ -337,6 +466,184 @@ def chat_public_stream(**kwargs):
             "error": str(e),
             "status": "error"
         }), 500
+
+# --- API endpoints cho quản lý người dùng và health check ---
+
+@api_bp.route('/health', methods=['GET'])
+def health_check():
+    """API kiểm tra trạng thái hoạt động của hệ thống"""
+    return jsonify({
+        "status": "online",
+        "service": "Code Supporter API",
+        "version": "1.0.0",
+        "timestamp": datetime.now().isoformat(),
+        "storage_type": storage_service.storage_type
+    })
+
+@api_bp.route('/register', methods=['POST'])
+def register():
+    """API đăng ký tài khoản"""
+    try:
+        data = request.json
+        
+        if not data or "username" not in data or "password" not in data:
+            return jsonify({"error": "Thiếu thông tin đăng ký"}), 400
+        
+        username = data.get("username")
+        password = data.get("password")
+        
+        # Kiểm tra độ dài username và password
+        if len(username) < 3 or len(password) < 6:
+            return jsonify({"error": "Tên đăng nhập phải có ít nhất 3 ký tự và mật khẩu phải có ít nhất 6 ký tự"}), 400
+        
+        # Tạo tài khoản
+        success, message = storage_service.create_user(username, password)
+        
+        if success:
+            # Tạo token JWT
+            token = jwt.encode({
+                'username': username,
+                'exp': datetime.utcnow() + timedelta(days=1)
+            }, SECRET_KEY, algorithm="HS256")
+            
+            return jsonify({
+                "message": message,
+                "token": token
+            }), 201
+        else:
+            return jsonify({"error": message}), 400
+            
+    except Exception as e:
+        logger.error(f"Lỗi đăng ký: {str(e)}")
+        return jsonify({"error": f"Lỗi server: {str(e)}"}), 500
+
+@api_bp.route('/login', methods=['POST'])
+def login():
+    """API đăng nhập"""
+    try:
+        data = request.json
+        
+        username = data.get("username")
+        password = data.get("password")
+        
+        if not username or not password:
+            return jsonify({"error": "Thiếu tên đăng nhập hoặc mật khẩu"}), 400
+        
+        # Xác thực người dùng
+        if storage_service.authenticate_user(username, password):
+            # Lấy thông tin người dùng (không có mật khẩu)
+            user_info = storage_service.get_user_info(username)
+            
+            # Tạo token JWT
+            token = jwt.encode({
+                'username': username,
+                'exp': datetime.utcnow() + timedelta(days=1)
+            }, SECRET_KEY, algorithm="HS256")
+            
+            return jsonify({
+                "message": "Đăng nhập thành công",
+                "token": token,
+                "username": username,
+                "user_info": user_info
+            }), 200
+        else:
+            return jsonify({"error": "Tên đăng nhập hoặc mật khẩu không chính xác"}), 401
+            
+    except Exception as e:
+        logger.error(f"Lỗi đăng nhập: {str(e)}")
+        return jsonify({"error": f"Lỗi server: {str(e)}"}), 500
+
+@api_bp.route('/user/info', methods=['GET'])
+@token_required
+def get_user_info(current_user):
+    """API lấy thông tin người dùng hiện tại"""
+    try:
+        # Lấy thông tin người dùng (không có mật khẩu)
+        user_info = storage_service.get_user_info(current_user)
+        
+        if user_info:
+            return jsonify({
+                "user_info": user_info,
+                "status": "success"
+            })
+        else:
+            return jsonify({
+                "error": "Không tìm thấy thông tin người dùng",
+                "status": "error"
+            }), 404
+        
+    except Exception as e:
+        logger.error(f"Lỗi lấy thông tin người dùng: {str(e)}")
+        return jsonify({
+            "error": str(e),
+            "status": "error"
+        }), 500
+
+@api_bp.route('/user/settings', methods=['POST'])
+@token_required
+def update_user_settings(current_user):
+    """API cập nhật cài đặt người dùng"""
+    try:
+        data = request.json
+        settings = data.get("settings")
+        
+        if not settings or not isinstance(settings, dict):
+            return jsonify({"error": "Cài đặt không hợp lệ"}), 400
+        
+        success = storage_service.update_user_settings(current_user, settings)
+        if success:
+            return jsonify({
+                "message": "Đã cập nhật cài đặt thành công",
+                "status": "success"
+            })
+        else:
+            return jsonify({
+                "error": "Không thể cập nhật cài đặt",
+                "status": "error"
+            }), 500
+        
+    except Exception as e:
+        logger.error(f"Lỗi cập nhật cài đặt người dùng: {str(e)}")
+        return jsonify({
+            "error": str(e),
+            "status": "error"
+        }), 500
+
+@api_bp.route('/user/change-password', methods=['POST'])
+@token_required
+def change_password(current_user):
+    """API thay đổi mật khẩu người dùng"""
+    try:
+        data = request.json
+        current_password = data.get("current_password")
+        new_password = data.get("new_password")
+        
+        if not current_password or not new_password:
+            return jsonify({"error": "Thiếu mật khẩu hiện tại hoặc mật khẩu mới"}), 400
+        
+        if len(new_password) < 6:
+            return jsonify({"error": "Mật khẩu mới phải có ít nhất 6 ký tự"}), 400
+        
+        success = storage_service.change_password(current_user, current_password, new_password)
+        if success:
+            return jsonify({
+                "message": "Đã thay đổi mật khẩu thành công",
+                "status": "success"
+            })
+        else:
+            return jsonify({
+                "error": "Không thể thay đổi mật khẩu. Vui lòng kiểm tra mật khẩu hiện tại.",
+                "status": "error"
+            }), 400
+        
+    except Exception as e:
+        logger.error(f"Lỗi thay đổi mật khẩu: {str(e)}")
+        return jsonify({
+            "error": str(e),
+            "status": "error"
+        }), 500
+
+# --- API endpoints cho quản lý API keys ---
 
 @api_bp.route('/apikey/create', methods=['POST'])
 @token_required
@@ -510,102 +817,12 @@ def delete_api_key(current_user):
             "status": "error"
         }), 500
 
-@api_bp.route('/user/info', methods=['GET'])
-@token_required
-def get_user_info(current_user):
-    """API lấy thông tin người dùng hiện tại"""
-    try:
-        # Lấy thông tin người dùng (không có mật khẩu)
-        user_info = storage_service.get_user_info(current_user)
-        
-        if user_info:
-            return jsonify({
-                "user_info": user_info,
-                "status": "success"
-            })
-        else:
-            return jsonify({
-                "error": "Không tìm thấy thông tin người dùng",
-                "status": "error"
-            }), 404
-        
-    except Exception as e:
-        logger.error(f"Lỗi lấy thông tin người dùng: {str(e)}")
-        return jsonify({
-            "error": str(e),
-            "status": "error"
-        }), 500
-
-@api_bp.route('/user/settings', methods=['POST'])
-@token_required
-def update_user_settings(current_user):
-    """API cập nhật cài đặt người dùng"""
-    try:
-        data = request.json
-        settings = data.get("settings")
-        
-        if not settings or not isinstance(settings, dict):
-            return jsonify({"error": "Cài đặt không hợp lệ"}), 400
-        
-        success = storage_service.update_user_settings(current_user, settings)
-        if success:
-            return jsonify({
-                "message": "Đã cập nhật cài đặt thành công",
-                "status": "success"
-            })
-        else:
-            return jsonify({
-                "error": "Không thể cập nhật cài đặt",
-                "status": "error"
-            }), 500
-        
-    except Exception as e:
-        logger.error(f"Lỗi cập nhật cài đặt người dùng: {str(e)}")
-        return jsonify({
-            "error": str(e),
-            "status": "error"
-        }), 500
-
-@api_bp.route('/user/change-password', methods=['POST'])
-@token_required
-def change_password(current_user):
-    """API thay đổi mật khẩu người dùng"""
-    try:
-        data = request.json
-        current_password = data.get("current_password")
-        new_password = data.get("new_password")
-        
-        if not current_password or not new_password:
-            return jsonify({"error": "Thiếu mật khẩu hiện tại hoặc mật khẩu mới"}), 400
-        
-        if len(new_password) < 6:
-            return jsonify({"error": "Mật khẩu mới phải có ít nhất 6 ký tự"}), 400
-        
-        success = storage_service.change_password(current_user, current_password, new_password)
-        if success:
-            return jsonify({
-                "message": "Đã thay đổi mật khẩu thành công",
-                "status": "success"
-            })
-        else:
-            return jsonify({
-                "error": "Không thể thay đổi mật khẩu. Vui lòng kiểm tra mật khẩu hiện tại.",
-                "status": "error"
-            }), 400
-        
-    except Exception as e:
-        logger.error(f"Lỗi thay đổi mật khẩu: {str(e)}")
-        return jsonify({
-            "error": str(e),
-            "status": "error"
-        }), 500
-
 @api_bp.route('/user/clear-history', methods=['POST'])
 @token_required
 def clear_history(current_user):
     """API xóa lịch sử hội thoại của người dùng"""
     try:
-        success = storage_service.delete_conversations(current_user)
+        success = storage_service.delete_all_conversations(current_user)
         if success:
             return jsonify({
                 "message": "Đã xóa lịch sử hội thoại thành công",
