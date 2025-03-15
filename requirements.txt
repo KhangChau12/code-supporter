@@ -1,9 +1,7 @@
-# Đảm bảo sử dụng phiên bản pydantic có wheel sẵn có
-pydantic==2.6.3
-pydantic-core==2.16.3
-
 # Core dependencies
 together
+pydantic==2.5.2
+pydantic-core==2.14.5
 flask==2.3.3
 flask-cors==3.0.10
 python-dotenv==1.0.0
