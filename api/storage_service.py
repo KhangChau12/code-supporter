@@ -202,6 +202,84 @@ class StorageService:
         except Exception as e:
             logger.error(f"Lỗi khi xác thực người dùng: {str(e)}")
             return False
+        
+    def create_user(self, username: str, password: str) -> Tuple[bool, str]:
+        """
+        Tạo người dùng mới
+        
+        Args:
+            username (str): Tên đăng nhập
+            password (str): Mật khẩu
+            
+        Returns:
+            Tuple[bool, str]: (Thành công hay không, Thông báo)
+        """
+        try:
+            # Kiểm tra tên đăng nhập đã tồn tại chưa
+            if self.storage_type == "mongodb":
+                existing_user = self.db.users.find_one({"username": username})
+                if existing_user:
+                    return False, "Tên đăng nhập đã tồn tại"
+                
+                # Hash mật khẩu
+                hashed_password = self._hash_password(password)
+                
+                # Thêm người dùng mới
+                user_data = {
+                    "username": username,
+                    "password": hashed_password,
+                    "created_at": datetime.now(),
+                    "last_login": None,
+                    "settings": {}
+                }
+                
+                self.db.users.insert_one(user_data)
+                logger.info(f"Đã tạo người dùng mới: {username}")
+                
+                return True, "Đăng ký thành công"
+                
+            else:
+                # Lưu trữ file
+                users_file = os.path.join(self.data_dir, "users", "users.json")
+                
+                # Tạo file mới nếu chưa tồn tại
+                if not os.path.exists(users_file):
+                    with open(users_file, "w", encoding="utf-8") as f:
+                        json.dump([], f)
+                
+                # Đọc danh sách người dùng
+                with open(users_file, "r", encoding="utf-8") as f:
+                    users = json.load(f)
+                
+                # Kiểm tra tên đăng nhập đã tồn tại chưa
+                if any(user["username"] == username for user in users):
+                    return False, "Tên đăng nhập đã tồn tại"
+                
+                # Hash mật khẩu
+                hashed_password = self._hash_password(password)
+                
+                # Thêm người dùng mới
+                user_data = {
+                    "username": username,
+                    "password": hashed_password,
+                    "created_at": datetime.now().isoformat(),
+                    "last_login": None,
+                    "settings": {}
+                }
+                
+                users.append(user_data)
+                
+                # Lưu lại danh sách người dùng
+                with open(users_file, "w", encoding="utf-8") as f:
+                    json.dump(users, f, ensure_ascii=False, indent=2)
+                
+                logger.info(f"Đã tạo người dùng mới: {username}")
+                
+                return True, "Đăng ký thành công"
+                    
+        except Exception as e:
+            logger.error(f"Lỗi khi tạo người dùng: {str(e)}")
+            return False, f"Lỗi server: {str(e)}"
     
     def update_user_settings(self, username: str, settings: Dict) -> bool:
         """Cập nhật cài đặt người dùng"""
