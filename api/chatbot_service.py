@@ -1,6 +1,6 @@
 """
 Module chuyên biệt cho dịch vụ chatbot Code Supporter
-Cập nhật: Cải thiện xử lý lỗi và retry logic, cập nhật cho phiên bản Together 1.0.0
+Cập nhật: Sử dụng Together API phiên bản mới
 """
 from together import Together
 import os
@@ -8,7 +8,6 @@ from dotenv import load_dotenv
 import logging
 import time
 import backoff
-import json
 from typing import List, Dict, Any, Generator, Optional
 
 # Cấu hình logging
@@ -54,9 +53,9 @@ class CodeSupporterService:
             "stop": ["<|eot_id|>", "<|eom_id|>"]
         }
         
-        # Khởi tạo kết nối API - cập nhật cho phiên bản Together 1.0.0
+        # Khởi tạo kết nối API - cập nhật cho phiên bản Together mới
         try:
-            # Đặt API key thông qua biến môi trường (phương pháp ưu tiên của Together 1.0.0)
+            # Đặt API key thông qua biến môi trường
             os.environ["TOGETHER_API_KEY"] = self.api_key
             self.client = Together()
             logger.info(f"Khởi tạo dịch vụ Code Supporter thành công với model {self.model_name}")
@@ -66,7 +65,7 @@ class CodeSupporterService:
         
         # Prompt hệ thống mặc định
         self.system_prompt = (
-            "Bạn là một trợ lý viết code hỗ trợ học sinh với các bài tập lập trình. Bạn được finetune và chỉnh sửa bỏi Châu Phúc Khang"
+            "Bạn là một trợ lý viết code hỗ trợ học sinh với các bài tập lập trình. Bạn được finetune và chỉnh sửa bỏi Châu Phúc Khang. "
             "Thay vì đưa code liền dù học sinh chỉ mới gửi bài, hãy mô tả logic của code và giải thích cách thuật toán hoạt động. "
             "Lưu ý, chỉ đưa code trực tiếp khi và chỉ khi học sinh yêu cầu rõ ràng trong tin nhắn, nếu không thì tập trung vào giải thích logic và ý tưởng giải giúp học sinh tự viết code và hỏi rằng học sinh có cần đưa code thẳng không. "
             "Ngoài việc sinh code, bạn cũng có thể giải thích các thắc mắc liên quan đến lập trình và nếu người dùng có hỏi điều gì ngoài lập trình thì bạn vẫn đối thoại được như bình thường"
@@ -93,26 +92,29 @@ class CodeSupporterService:
             start_time = time.time()
             
             # Tạo ngữ cảnh từ lịch sử hội thoại nếu có
-            context = ""
-            if conversation_history and len(conversation_history) > 0:
-                context = "\n".join([f"{entry['role']}: {entry['content']}" for entry in conversation_history])
-                context = f"Dữ liệu từ cơ sở dữ liệu:\n{context}\n\n"
-            
-            prompt = f"{context}Câu hỏi của người dùng: {user_message}\n\n"
-            
             messages = [
-                {"role": "system", "content": self.system_prompt},
-                {"role": "user", "content": prompt}
+                {"role": "system", "content": self.system_prompt}
             ]
+            
+            # Thêm lịch sử hội thoại nếu có
+            if conversation_history and len(conversation_history) > 0:
+                for entry in conversation_history:
+                    messages.append({
+                        "role": entry["role"],
+                        "content": entry["content"]
+                    })
+            
+            # Thêm tin nhắn hiện tại của người dùng
+            messages.append({"role": "user", "content": user_message})
+            
+            logger.info(f"Gửi yêu cầu đến mô hình {self.model_name} với tin nhắn: {user_message[:50]}...")
             
             # Kết hợp tham số mặc định và tùy chỉnh
             params = self.default_params.copy()
             if custom_params:
                 params.update(custom_params)
             
-            logger.info(f"Gửi yêu cầu đến mô hình {self.model_name} với tin nhắn: {user_message[:50]}...")
-            
-            # Gọi API
+            # Gọi API với Together phiên bản mới
             response = self.client.chat.completions.create(
                 model=self.model_name,
                 messages=messages,
@@ -120,6 +122,7 @@ class CodeSupporterService:
             )
             
             elapsed_time = time.time() - start_time
+            # Trích xuất phản hồi theo cách mới
             bot_response = response.choices[0].message.content
             
             logger.info(f"Nhận phản hồi từ mô hình sau {elapsed_time:.2f}s: {bot_response[:50]}...")
@@ -135,7 +138,7 @@ class CodeSupporterService:
             elif "timeout" in str(e).lower():
                 error_message += "Kết nối đến máy chủ bị chậm. Vui lòng thử lại."
             else:
-                error_message += "Vui lòng thử lại hoặc đặt câu hỏi theo cách khác."
+                error_message += f"Lỗi cụ thể: {str(e)}. Vui lòng thử lại hoặc đặt câu hỏi theo cách khác."
             
             return error_message
             
@@ -160,18 +163,23 @@ class CodeSupporterService:
         try:
             start_time = time.time()
             
-            # Tạo ngữ cảnh từ lịch sử hội thoại nếu có
-            context = ""
-            if conversation_history and len(conversation_history) > 0:
-                context = "\n".join([f"{entry['role']}: {entry['content']}" for entry in conversation_history])
-                context = f"Dữ liệu từ cơ sở dữ liệu:\n{context}\n\n"
-            
-            prompt = f"{context}Câu hỏi của người dùng: {user_message}\n\n"
-            
+            # Tạo messages từ lịch sử hội thoại và tin nhắn hiện tại
             messages = [
-                {"role": "system", "content": self.system_prompt},
-                {"role": "user", "content": prompt}
+                {"role": "system", "content": self.system_prompt}
             ]
+            
+            # Thêm lịch sử hội thoại nếu có
+            if conversation_history and len(conversation_history) > 0:
+                for entry in conversation_history:
+                    messages.append({
+                        "role": entry["role"],
+                        "content": entry["content"]
+                    })
+            
+            # Thêm tin nhắn hiện tại của người dùng
+            messages.append({"role": "user", "content": user_message})
+            
+            logger.info(f"Gửi yêu cầu stream đến mô hình {self.model_name} với tin nhắn: {user_message[:50]}...")
             
             # Kết hợp tham số mặc định và tùy chỉnh
             params = self.default_params.copy()
@@ -180,9 +188,7 @@ class CodeSupporterService:
             # Đảm bảo stream=True cho phản hồi theo stream
             params["stream"] = True
             
-            logger.info(f"Gửi yêu cầu stream đến mô hình {self.model_name} với tin nhắn: {user_message[:50]}...")
-            
-            # Gọi API với stream
+            # Gọi API với stream sử dụng Together phiên bản mới
             response_stream = self.client.chat.completions.create(
                 model=self.model_name,
                 messages=messages,
@@ -202,7 +208,7 @@ class CodeSupporterService:
             
         except Exception as e:
             logger.error(f"Lỗi khi tạo phản hồi stream: {str(e)}")
-            yield "Xin lỗi, đã xảy ra lỗi khi xử lý yêu cầu của bạn. Vui lòng thử lại."
+            yield f"Xin lỗi, đã xảy ra lỗi khi xử lý yêu cầu của bạn: {str(e)}. Vui lòng thử lại."
     
     def set_system_prompt(self, new_prompt: str) -> None:
         """
@@ -222,4 +228,4 @@ class CodeSupporterService:
             params (dict): Các tham số mới
         """
         self.default_params.update(params)
-        logger.info(f"Đã cập nhật tham số mặc định: {json.dumps(params)}")
+        logger.info(f"Đã cập nhật tham số mặc định: {params}")
