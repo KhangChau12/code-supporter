@@ -1,0 +1,103 @@
+/* Lava Dark Theme - Modified CSS for Code Supporter
+ * A dark theme with black, white, and lava orange accents
+ */
+
+ :root {
+    /* Lava Dark theme (default dark) */
+    --primary-color: #FF5722; /* Lava orange primary */
+    --primary-hover: #FF7043; /* Lighter lava for hover */
+    --secondary-color: #FF9800; /* Orange secondary */
+    --secondary-hover: #FFA726; /* Lighter orange */
+    --text-color: #FFFFFF; /* Pure white for text */
+    --text-muted: #B0BEC5; /* Light blue-grey for muted text */
+    --bg-color: #121212; /* Near black for background */
+    --card-bg: #1E1E1E; /* Slightly lighter black for cards */
+    --border-color: #333333; /* Dark grey for borders */
+    --error-color: #F44336; /* Red for errors */
+    --success-color: #4CAF50; /* Green for success */
+    --warning-color: #FFC107; /* Amber for warnings */
+    --input-bg: #242424; /* Dark input background */
+    --shadow-color: rgba(0, 0, 0, 0.5); /* Darker shadows */
+    --code-bg: #1A1A1A; /* Slightly lighter black for code blocks */
+    --accent-color: #FF3D00; /* Deep lava accent */
+    --gradient-start: #FF5722; /* Lava orange */
+    --gradient-end: #FF8A65; /* Lighter lava */
+    --transition-speed: 0.3s;
+}
+
+/* Light theme variant with lava accents */
+body.light-mode {
+    --primary-color: #FF5722; /* Lava orange primary */
+    --primary-hover: #E64A19; /* Darker lava for hover */
+    --secondary-color: #FF9800; /* Orange secondary */
+    --secondary-hover: #F57C00; /* Darker orange for hover */
+    --text-color: #212121; /* Near black for text */
+    --text-muted: #757575; /* Grey for muted text */
+    --bg-color: #F5F5F5; /* Off-white background */
+    --card-bg: #FFFFFF; /* Pure white for cards */
+    --border-color: #E0E0E0; /* Light grey for borders */
+    --error-color: #F44336; /* Red */
+    --success-color: #4CAF50; /* Green */
+    --warning-color: #FFC107; /* Amber */
+    --input-bg: #FAFAFA; /* Nearly white input background */
+    --shadow-color: rgba(0, 0, 0, 0.1); /* Light shadows */
+    --code-bg: #F5F5F5; /* Off-white code background */
+    --accent-color: #FF3D00; /* Deep lava accent */
+    --gradient-start: #FF5722; /* Lava orange */
+    --gradient-end: #FF8A65; /* Lighter lava */
+    --transition-speed: 0.3s;
+}
+
+/* Add some lava-themed enhancement classes */
+.lava-card {
+    border-left: 3px solid var(--primary-color);
+    transition: all 0.3s ease;
+}
+
+.lava-card:hover {
+    border-left-width: 6px;
+    transform: translateX(3px);
+}
+
+.lava-button {
+    background: linear-gradient(135deg, var(--primary-color), var(--accent-color));
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 4px;
+    box-shadow: 0 2px 5px rgba(255, 87, 34, 0.3);
+    transition: all 0.3s;
+}
+
+.lava-button:hover {
+    box-shadow: 0 4px 8px rgba(255, 87, 34, 0.5);
+    transform: translateY(-2px);
+}
+
+/* Custom glowing effect for certain elements */
+@keyframes lavaGlow {
+    0% { box-shadow: 0 0 5px rgba(255, 87, 34, 0.5); }
+    50% { box-shadow: 0 0 15px rgba(255, 87, 34, 0.8); }
+    100% { box-shadow: 0 0 5px rgba(255, 87, 34, 0.5); }
+}
+
+.lava-glow {
+    animation: lavaGlow 2s infinite;
+}
+
+/* Enhanced styling for the chat interface */
+.message.bot-message {
+    border-left: 3px solid var(--primary-color);
+}
+
+.message.user-message {
+    background: linear-gradient(135deg, var(--primary-color), var(--accent-color));
+}
+
+#send-button {
+    background: linear-gradient(135deg, var(--primary-color), var(--accent-color));
+}
+
+.cs-chat-button, .cs-send-button {
+    background: linear-gradient(135deg, var(--primary-color), var(--accent-color));
+}
