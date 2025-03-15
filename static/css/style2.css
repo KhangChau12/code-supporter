@@ -1,79 +1,4 @@
-/* !IMPORTANT - Applying background to multiple selectors for maximum browser compatibility */
-html, body, body.login-page, main, .login-container, .auth-container, .app-container {
-    background-color: #101010 !important;
-    background-image: 
-        radial-gradient(circle at top right, rgba(255, 80, 0, 0.5), transparent 70%),
-        radial-gradient(circle at bottom left, rgba(255, 80, 0, 0.5), transparent 70%) !important;
-    background-attachment: fixed !important;
-    background-position: top right, bottom left !important;
-    background-repeat: no-repeat !important;
-    background-size: 100% 100% !important;
-}/* Add stronger radial gradients using multiple methods for maximum compatibility */
-.app-container {
-    position: relative;
-    z-index: 1;
-    background-color: transparent !important;
-}
-
-.app-container::before {
-    content: '';
-    position: fixed;
-    top: 0;
-    right: 0;
-    width: 100%;
-    height: 100%;
-    background: radial-gradient(circle at top right, rgba(255, 80, 0, 0.5), transparent 70%);
-    z-index: -1;
-    pointer-events: none;
-}
-
-.app-container::after {
-    content: '';
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: radial-gradient(circle at bottom left, rgba(255, 80, 0, 0.5), transparent 70%);
-    z-index: -1;
-    pointer-events: none;
-}
-
-/* Force background for login page */
-main, .auth-container, body.login-page {
-    background: linear-gradient(135deg, #101010, #1a1a1a),
-                radial-gradient(circle at top right, rgba(255, 80, 0, 0.5), transparent 70%),
-                radial-gradient(circle at bottom left, rgba(255, 80, 0, 0.5), transparent 70%) !important;
-    background-blend-mode: normal !important;
-}/* Alternative method using background-image for better compatibility */
-body, html {
-    background-color: #101010 !important;
-    color: var(--text-color);
-}
-
-body::before {
-    content: '';
-    position: fixed;
-    top: 0;
-    right: 0;
-    width: 50%;
-    height: 50%;
-    background: radial-gradient(circle at top right, rgba(255, 80, 0, 0.4), transparent 70%);
-    z-index: -1;
-    pointer-events: none;
-}
-
-body::after {
-    content: '';
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    width: 50%;
-    height: 50%;
-    background: radial-gradient(circle at bottom left, rgba(255, 80, 0, 0.4), transparent 70%);
-    z-index: -1;
-    pointer-events: none;
-}/* Enhanced lava theming for the chat interface */
+/* Enhanced lava theming for the chat interface */
 .chat-button, 
 .nav-button,
 a[href="/chat"], 
@@ -312,44 +237,12 @@ button[id*="register-button"]:hover {
     background-color: #FF5000;
 }
 
-/* Add STRONGER lava gradient background to login page - make it more visible */
-body, html, .app-container, main {
-    background-color: #101010 !important;
-}
-
-.auth-container, body.login-page, .login-container {
-    position: relative;
-    background: #101010 !important;
-    overflow: hidden;
-}
-
-.auth-container::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    right: 0;
-    width: 100%;
-    height: 100%;
-    background: radial-gradient(circle at top right, rgba(255, 80, 0, 0.4) 0%, transparent 60%);
-    z-index: 0;
-    opacity: 0.8;
-}
-
-.auth-container::after {
-    content: '';
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: radial-gradient(circle at bottom left, rgba(255, 80, 0, 0.4) 0%, transparent 60%);
-    z-index: 0;
-    opacity: 0.8;
-}
-
-.auth-card {
-    position: relative;
-    z-index: 10; /* Ensure card is above the gradients */
+/* Add lava gradient background to login page - replace the navy blue with lava black */
+.auth-container {
+    background: linear-gradient(135deg, #101010 0%, #1A1A1A 100%),
+                radial-gradient(circle at top right, rgba(255, 80, 0, 0.3) 0%, transparent 50%),
+                radial-gradient(circle at bottom left, rgba(255, 80, 0, 0.3) 0%, transparent 50%) !important;
+    background-blend-mode: normal !important;
 }
 
 /* Make sure the book logo in login screen is lava orange instead of blue */
@@ -409,7 +302,6 @@ a:hover, .interactive:hover, .clickable:hover, .selectable:hover {
  * - No orange border around logo (only text is orange)
  * - Chat/API Keys buttons maintain text visibility on hover
  * - Added lava-themed shadows to navigation elements
- * - Login background is now black with STRONG lava gradients
+ * - Login background is now black with lava gradients (not navy)
  * - Book logo in login screen is now lava orange instead of blue
- * - Multiple background application methods for maximum compatibility
  */
