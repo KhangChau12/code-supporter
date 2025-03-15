@@ -87,29 +87,6 @@ class StorageService:
                 os.makedirs(os.path.join(self.data_dir, subdir), exist_ok=True)
             logger.warning("Chuyển sang sử dụng lưu trữ file do lỗi không xác định")
     
-    def _setup_mongodb_indexes(self):
-        """Thiết lập các indexes cho hiệu suất tốt hơn"""
-        if self.storage_type != "mongodb":
-            return
-            
-        try:
-            # Index cho users collection
-            self.db.users.create_index("username", unique=True)
-            
-            # Index cho conversations collection
-            self.db.conversations.create_index([("username", pymongo.ASCENDING), ("timestamp", pymongo.DESCENDING)])
-            
-            # Index cho api_keys collection
-            self.db.api_keys.create_index("key", unique=True)
-            self.db.api_keys.create_index("created_by")
-            
-            # Index cho api_users collection
-            self.db.api_users.create_index([("api_key", pymongo.ASCENDING), ("user_id", pymongo.ASCENDING)])
-            self.db.api_users.create_index("last_active", pymongo.DESCENDING)
-            
-            logger.info("Đã thiết lập MongoDB indexes thành công")
-        except Exception as e:
-            logger.error(f"Lỗi khi thiết lập MongoDB indexes: {str(e)}")
     
     def _hash_password(self, password: str) -> str:
         """Hash mật khẩu sử dụng SHA-256"""

@@ -1,41 +1,25 @@
-FROM python:3.9-bullseye
+# Sử dụng Python 3.9 official image - một phiên bản ổn định
+FROM python:3.9-slim
 
-# Cài đặt dependencies
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    build-essential \
-    curl \
-    pkg-config \
-    libssl-dev \
-    && rm -rf /var/lib/apt/lists/*
-
-# Cài đặt Rust đúng cách
-RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
-ENV PATH="/root/.cargo/bin:${PATH}"
-RUN echo 'source "$HOME/.cargo/env"' >> ~/.bashrc
-RUN rustc --version && cargo --version
-
+# Thiết lập thư mục làm việc
 WORKDIR /app
 
-# Sao chép requirements và cài đặt dependencies
+# Thiết lập biến môi trường
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PORT=5000 \
+    DEBUG=False \
+    TOGETHER_MODEL_NAME=meta-llama/Llama-3.3-70B-Instruct-Turbo
+
+# Cài đặt dependencies
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Cài đặt riêng together và pydantic
-RUN pip install together
-
-# Sao chép phần còn lại của ứng dụng
+# Copy toàn bộ mã nguồn vào container
 COPY . .
 
-# Tạo thư mục data nếu cần
-RUN mkdir -p /app/data
+# Mở port
+EXPOSE $PORT
 
-# Thiết lập biến môi trường
-ENV PORT=8080
-ENV HOST=0.0.0.0
-ENV DEBUG=False
-
-# Expose port
-EXPOSE 8080
-
-# Lệnh chạy ứng dụng
-CMD gunicorn --bind $HOST:$PORT wsgi:app
+# Chạy ứng dụng với gunicorn
+CMD gunicorn --bind 0.0.0.0:$PORT --workers=4 --threads=2 wsgi:app
