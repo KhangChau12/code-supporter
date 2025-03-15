@@ -1,4 +1,4 @@
-// chat.js - Xử lý chức năng chat với hỗ trợ streaming
+// chat.js - Xử lý chức năng chat với hỗ trợ streaming cải tiến
 document.addEventListener('DOMContentLoaded', function() {
     // Lấy các phần tử DOM
     const messagesContainer = document.getElementById('messages');
@@ -10,6 +10,8 @@ document.addEventListener('DOMContentLoaded', function() {
     // Biến lưu trạng thái
     let savedSnippets = JSON.parse(localStorage.getItem('savedCodeSnippets')) || [];
     let isWaitingForResponse = false;
+    let currentStreamBuffer = '';
+    let streamUpdateInterval = null;
     
     // Kiểm tra các phần tử DOM tồn tại trước khi thêm event listeners
     if (themeToggle) {
@@ -87,7 +89,7 @@ document.addEventListener('DOMContentLoaded', function() {
         streamChatResponse(message, typingIndicator);
     }
 
-    // Hàm xử lý stream chat response
+    // Hàm xử lý stream chat response CẢI TIẾN
     function streamChatResponse(message, typingIndicator) {
         // Chuẩn bị response container
         const responseMsgDiv = document.createElement('div');
@@ -102,8 +104,53 @@ document.addEventListener('DOMContentLoaded', function() {
         timeDiv.textContent = formatTime(new Date());
         responseMsgDiv.appendChild(timeDiv);
         
-        // Biến lưu nội dung tích lũy
-        let accumulatedContent = '';
+        // Biến lưu nội dung tích lũy 
+        currentStreamBuffer = '';
+        let lastProcessedLength = 0;
+        let pendingChunks = [];
+        let isProcessing = false;
+        
+        // Bộ đếm để giúp ổn định tần suất cập nhật DOM
+        let updateCounter = 0;
+        
+        // Xóa typing indicator và thêm response container vào messages
+        if (typingIndicator) typingIndicator.remove();
+        messagesContainer.appendChild(responseMsgDiv);
+        messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        
+        // Thiết lập interval để cập nhật nội dung trơn tru hơn
+        // Khoảng 60ms (khoảng 16-17 frames/giây) là tốc độ tốt cho streaming mượt mà
+        if (streamUpdateInterval) {
+            clearInterval(streamUpdateInterval);
+        }
+        
+        streamUpdateInterval = setInterval(() => {
+            if (pendingChunks.length > 0 && !isProcessing) {
+                isProcessing = true;
+                
+                // Xử lý tất cả các chunk đang chờ
+                const chunks = [...pendingChunks];
+                pendingChunks = [];
+                
+                // Cập nhật buffer từ các chunk
+                chunks.forEach(chunk => {
+                    currentStreamBuffer += chunk;
+                });
+                
+                // Chỉ cập nhật DOM khi có nội dung mới đáng kể hoặc theo chu kỳ
+                if (currentStreamBuffer.length - lastProcessedLength > 2 || updateCounter % 3 === 0) {
+                    // Cập nhật nội dung với định dạng sơ bộ (hiệu suất cao hơn)
+                    contentDiv.innerHTML = simpleMarkdownFormat(currentStreamBuffer);
+                    lastProcessedLength = currentStreamBuffer.length;
+                    
+                    // Đảm bảo scroll luôn ở cuối
+                    messagesContainer.scrollTop = messagesContainer.scrollHeight;
+                }
+                
+                updateCounter++;
+                isProcessing = false;
+            }
+        }, 60);
         
         // Gửi request đến endpoint stream
         fetch('/api/chat/stream', {
@@ -118,13 +165,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 throw new Error('Lỗi kết nối với server');
             }
             
-            // Xóa typing indicator
-            if (typingIndicator) typingIndicator.remove();
-            
-            // Thêm response container vào messages
-            messagesContainer.appendChild(responseMsgDiv);
-            messagesContainer.scrollTop = messagesContainer.scrollHeight;
-            
             // Xử lý stream response
             const reader = response.body.getReader();
             const decoder = new TextDecoder();
@@ -132,10 +172,13 @@ document.addEventListener('DOMContentLoaded', function() {
             function processStream({ done, value }) {
                 if (done) {
                     // Hoàn thành, cập nhật final formatting và bật lại input
-                    contentDiv.innerHTML = formatMarkdown(accumulatedContent);
+                    clearInterval(streamUpdateInterval);
                     
-                    // Thêm nút copy cho code blocks
+                    // Xử lý formatting cuối cùng khi stream kết thúc
                     setTimeout(() => {
+                        contentDiv.innerHTML = formatMarkdown(currentStreamBuffer);
+                        
+                        // Thêm nút copy cho code blocks
                         responseMsgDiv.querySelectorAll('pre').forEach(pre => {
                             if (!pre.querySelector('.copy-code-btn')) {
                                 const copyBtn = document.createElement('button');
@@ -153,7 +196,17 @@ document.addEventListener('DOMContentLoaded', function() {
                                 pre.appendChild(copyBtn);
                             }
                         });
-                    }, 100);
+                        
+                        // Highlight code nếu có thư viện Prism
+                        if (window.Prism) {
+                            responseMsgDiv.querySelectorAll('pre code').forEach(block => {
+                                Prism.highlightElement(block);
+                            });
+                        }
+                        
+                        // Đảm bảo scroll cuối cùng
+                        messagesContainer.scrollTop = messagesContainer.scrollHeight;
+                    }, 50);
                     
                     // Kích hoạt lại input và nút gửi
                     messageInput.disabled = false;
@@ -174,13 +227,8 @@ document.addEventListener('DOMContentLoaded', function() {
                             const data = JSON.parse(event.substring(6));
                             
                             if (!data.done) {
-                                // Cập nhật nội dung tích lũy và hiển thị
-                                accumulatedContent += data.chunk;
-                                
-                                // Hiển thị nội dung sơ bộ (không cần format markdown đầy đủ để tăng hiệu suất)
-                                // Chỉ xử lý một số markdown đơn giản trong quá trình stream
-                                contentDiv.innerHTML = simpleMarkdownFormat(accumulatedContent);
-                                messagesContainer.scrollTop = messagesContainer.scrollHeight;
+                                // Thêm chunk vào pending để xử lý trong interval
+                                pendingChunks.push(data.chunk);
                             }
                         } catch (e) {
                             console.error('Lỗi xử lý event stream:', e);
@@ -198,8 +246,13 @@ document.addEventListener('DOMContentLoaded', function() {
         .catch(error => {
             console.error('Error:', error);
             
-            // Xóa typing indicator
+            // Xóa typing indicator nếu còn
             if (typingIndicator) typingIndicator.remove();
+            
+            // Xóa interval
+            if (streamUpdateInterval) {
+                clearInterval(streamUpdateInterval);
+            }
             
             // Hiển thị thông báo lỗi
             addMessage('Đã xảy ra lỗi khi kết nối với server: ' + error.message, 'bot');
@@ -214,15 +267,41 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Hàm định dạng markdown đơn giản cho streaming (chỉ xử lý cơ bản)
     function simpleMarkdownFormat(text) {
-        // Chỉ xử lý các định dạng đơn giản trong quá trình stream để tăng hiệu suất
+        // Phát hiện và xử lý code blocks
         let formatted = text;
-        // Xử lý inline code
-        formatted = formatted.replace(/`([^`]+)`/g, '<code>$1</code>');
+        
+        // Xử lý code blocks trong quá trình stream
+        const codeBlockRegex = /```(\w*)\n([\s\S]*?)```/g;
+        if (codeBlockRegex.test(formatted)) {
+            formatted = formatted.replace(codeBlockRegex, function(match, language, code) {
+                return `<pre><code class="language-${language}">${escapeHTML(code)}</code></pre>`;
+            });
+        } else {
+            // Nếu code block chưa đóng, tìm lần xuất hiện cuối cùng của ```
+            const lastCodeBlockStart = formatted.lastIndexOf('```');
+            if (lastCodeBlockStart !== -1 && (formatted.substring(lastCodeBlockStart).split('\n').length > 1)) {
+                // Bỏ qua những phần code block chưa hoàn thành để tránh bị vỡ giao diện
+                const beforeLastCodeBlock = formatted.substring(0, lastCodeBlockStart);
+                formatted = beforeLastCodeBlock + '<pre><code>' + 
+                           escapeHTML(formatted.substring(lastCodeBlockStart + 3)) + '</code></pre>';
+            }
+        }
+        
+        // Xử lý inline code - làm cho cẩn thận để không bị lỗi nửa chừng
+        let inlineCodeMatches = formatted.match(/`([^`]+)`/g);
+        if (inlineCodeMatches) {
+            inlineCodeMatches.forEach(match => {
+                formatted = formatted.replace(match, '<code>' + escapeHTML(match.slice(1, -1)) + '</code>');
+            });
+        }
+        
         // Xử lý bold
         formatted = formatted.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+        
         // Xử lý italic
         formatted = formatted.replace(/\*(.*?)\*/g, '<em>$1</em>');
-        // Xử lý xuống dòng
+        
+        // Xử lý xuống dòng mà không phá vỡ các phần tử HTML
         formatted = formatted.replace(/\n/g, '<br>');
         
         return formatted;
@@ -262,7 +341,14 @@ document.addEventListener('DOMContentLoaded', function() {
                         pre.appendChild(copyBtn);
                     }
                 });
-            }, 100);
+                
+                // Highlight code nếu có Prism
+                if (window.Prism) {
+                    messageDiv.querySelectorAll('pre code').forEach(block => {
+                        Prism.highlightElement(block);
+                    });
+                }
+            }, 50);
         } else {
             // Escape HTML cho tin nhắn người dùng
             contentDiv.textContent = content;
