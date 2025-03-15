@@ -3,15 +3,15 @@
  */
 
  :root {
-    /* Lava Dark theme (default dark) */
-    --primary-color: #FF5722; /* Lava orange primary */
-    --primary-hover: #FF7043; /* Lighter lava for hover */
-    --secondary-color: #FF9800; /* Orange secondary */
-    --secondary-hover: #FFA726; /* Lighter orange */
+    /* Lava Dark theme with EXTRA VIBRANT lava orange (default dark) */
+    --primary-color: #FF5000; /* More vibrant lava orange primary */
+    --primary-hover: #FF6A00; /* Vibrant lava hover */
+    --secondary-color: #FF7800; /* Intense orange secondary */
+    --secondary-hover: #FF8C00; /* Darker orange */
     --text-color: #FFFFFF; /* Pure white for text */
     --text-muted: #B0BEC5; /* Light blue-grey for muted text */
-    --bg-color: #121212; /* Near black for background */
-    --card-bg: #1E1E1E; /* Slightly lighter black for cards */
+    --bg-color: #101010; /* Even darker black for background */
+    --card-bg: #1A1A1A; /* Slightly lighter black for cards */
     --border-color: #333333; /* Dark grey for borders */
     --error-color: #F44336; /* Red for errors */
     --success-color: #4CAF50; /* Green for success */
@@ -19,9 +19,9 @@
     --input-bg: #242424; /* Dark input background */
     --shadow-color: rgba(0, 0, 0, 0.5); /* Darker shadows */
     --code-bg: #1A1A1A; /* Slightly lighter black for code blocks */
-    --accent-color: #FF3D00; /* Deep lava accent */
-    --gradient-start: #FF5722; /* Lava orange */
-    --gradient-end: #FF8A65; /* Lighter lava */
+    --accent-color: #FF3000; /* Even deeper lava accent */
+    --gradient-start: #FF5000; /* Super vibrant lava orange */
+    --gradient-end: #FF2800; /* Intense red-orange */
     --transition-speed: 0.3s;
 }
 
@@ -48,7 +48,34 @@ body.light-mode {
     --transition-speed: 0.3s;
 }
 
-/* Add some lava-themed enhancement classes */
+/* Additional styles for the chat page */
+.app-header {
+    border-bottom: 2px solid var(--primary-color);
+    box-shadow: 0 2px 10px rgba(255, 40, 0, 0.3);
+}
+
+.brand h1, #username-display, .Code, .Supporter {
+    color: var(--primary-color) !important;
+    text-shadow: 0 0 5px rgba(255, 40, 0, 0.3);
+}
+
+.input-container {
+    border-top: 2px solid var(--primary-color);
+    box-shadow: 0 -2px 10px rgba(255, 40, 0, 0.2);
+}
+
+#message-input:focus {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 2px rgba(255, 80, 0, 0.3);
+}
+
+/* Glowing effect for the logo and buttons */
+.brand, .nav-link:hover, #theme-toggle:hover, #logout-button:hover {
+    color: var(--primary-color) !important;
+    box-shadow: 0 0 15px rgba(255, 80, 0, 0.4);
+}
+
+/* Add some ultra vibrant lava-themed enhancement classes */
 .lava-card {
     border-left: 3px solid var(--primary-color);
     transition: all 0.3s ease;
@@ -87,17 +114,107 @@ body.light-mode {
 
 /* Enhanced styling for the chat interface */
 .message.bot-message {
-    border-left: 3px solid var(--primary-color);
+    border-left: 4px solid var(--primary-color); /* Thicker border */
+    box-shadow: -2px 0 8px rgba(255, 80, 0, 0.3); /* Glow effect on border */
 }
 
 .message.user-message {
     background: linear-gradient(135deg, var(--primary-color), var(--accent-color));
+    box-shadow: 0 4px 15px rgba(255, 40, 0, 0.3); /* Add glow effect */
 }
 
 #send-button {
     background: linear-gradient(135deg, var(--primary-color), var(--accent-color));
+    box-shadow: 0 4px 12px rgba(255, 40, 0, 0.5); /* Stronger glow */
+}
+
+#send-button:hover {
+    box-shadow: 0 4px 15px rgba(255, 40, 0, 0.7); /* Even stronger glow on hover */
+    transform: translateY(-2px);
 }
 
 .cs-chat-button, .cs-send-button {
     background: linear-gradient(135deg, var(--primary-color), var(--accent-color));
+    box-shadow: 0 4px 12px rgba(255, 40, 0, 0.5); /* Stronger glow */
 }
+
+/* Login page specific styling - with more oranges as requested */
+.auth-header {
+    background: linear-gradient(135deg, #FF5000, #FF2800); /* SUPER intense orange gradient */
+    padding: 30px 24px;
+    text-align: center;
+    border-bottom: 4px solid #FF3000; /* Vibrant orange border */
+    box-shadow: 0 4px 15px rgba(255, 40, 0, 0.3); /* Extra glow effect */
+}
+
+.auth-button, 
+.primary-button, 
+button[id*="login-button"], 
+button[id*="register-button"] {
+    background: linear-gradient(135deg, #FF5000, #FF2800); /* SUPER intense orange gradient */
+    border: none;
+    box-shadow: 0 4px 15px rgba(255, 40, 0, 0.4); /* Stronger glow */
+    transition: all 0.3s ease;
+}
+
+.auth-button:hover, 
+.primary-button:hover, 
+button[id*="login-button"]:hover, 
+button[id*="register-button"]:hover {
+    background: linear-gradient(135deg, #FF6000, #FF3800); /* Slightly lighter on hover */
+    box-shadow: 0 6px 20px rgba(255, 40, 0, 0.6); /* Stronger glow on hover */
+    transform: translateY(-2px);
+}
+
+.auth-tab.active {
+    color: #FF5000; /* Match active tab color to new vibrant orange */
+    border-bottom-color: #FF5000;
+}
+
+.auth-tab.active:before {
+    background-color: #FF5000;
+}
+
+/* Add gradient background to auth container */
+.auth-container {
+    background: linear-gradient(135deg, #121212 0%, #1A1A1A 100%),
+                radial-gradient(circle at top right, rgba(255, 69, 0, 0.2) 0%, transparent 50%),
+                radial-gradient(circle at bottom left, rgba(255, 109, 36, 0.2) 0%, transparent 50%);
+    background-blend-mode: normal;
+}
+
+/* Special effects for code blocks and other highlights */
+pre, .code-block {
+    border-left: 4px solid var(--primary-color);
+    box-shadow: 0 4px 15px rgba(255, 40, 0, 0.2);
+}
+
+pre .copy-code-btn, .copy-button {
+    background-color: var(--primary-color);
+    color: white;
+    box-shadow: 0 2px 6px rgba(255, 40, 0, 0.4);
+}
+
+pre .copy-code-btn:hover, .copy-button:hover {
+    background-color: var(--secondary-color);
+    box-shadow: 0 2px 8px rgba(255, 40, 0, 0.6);
+}
+
+/* Super vibrant effect for links and interactive elements */
+a, .interactive, .clickable, .selectable {
+    color: var(--primary-color);
+    transition: all 0.3s;
+}
+
+a:hover, .interactive:hover, .clickable:hover, .selectable:hover {
+    color: var(--secondary-color);
+    text-shadow: 0 0 5px rgba(255, 120, 0, 0.5);
+}
+
+/* How to apply this theme:
+ * 1. Add this CSS file to your project
+ * 2. Link it in your HTML after the original style.css
+ * 3. Or copy the :root variables into your existing style.css
+ * 
+ * This theme is ULTRA VIBRANT with extra lava orange for maximum impact!
+ */
