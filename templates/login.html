@@ -1,131 +1,415 @@
-<!DOCTYPE html>
-<html lang="vi">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Code Supporter - Đăng nhập</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style2.css') }}">
-    <style>
-        .auth-container {
-            position: relative;
-            overflow: hidden;
-            background: radial-gradient(circle at top right, rgba(99, 102, 241, 0.1) 0%, transparent 40%),
-                        radial-gradient(circle at bottom left, rgba(59, 130, 246, 0.1) 0%, transparent 40%);
-        }
-        
-        .auth-container::before, .auth-container::after {
-            content: '';
-            position: absolute;
-            width: 300px;
-            height: 300px;
-            border-radius: 50%;
-            filter: blur(100px);
-            z-index: -1;
-        }
-        
-        .auth-container::before {
-            background-color: rgba(99, 102, 241, 0.15);
-            top: -100px;
-            right: -100px;
-        }
-        
-        .auth-container::after {
-            background-color: rgba(59, 130, 246, 0.15);
-            bottom: -100px;
-            left: -100px;
-        }
-        
-        .logo-container {
-            position: absolute;
-            top: 20px;
-            left: 20px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-        
-        .logo {
-            width: 40px;
-            height: 40px;
-        }
-        
-        .logo-text {
-            font-size: 20px;
-            font-weight: bold;
-            background: linear-gradient(135deg, var(--gradient-start), var(--gradient-end));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-        }
-    </style>
-</head>
-<body>
-    <div class="auth-container">
-        <div class="logo-container">
-            <div class="logo">
-                <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="url(#gradient)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <defs>
-                        <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                            <stop offset="0%" stop-color="#3b82f6" />
-                            <stop offset="100%" stop-color="#8b5cf6" />
-                        </linearGradient>
-                    </defs>
-                    <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path>
-                    <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path>
-                </svg>
-            </div>
-            <div class="logo-text">Code Supporter</div>
-        </div>
-        
-        <div class="auth-card">
-            <div class="auth-header">
-                <h1>Chào mừng</h1>
-                <p>Trợ lý lập trình thông minh</p>
-            </div>
-            
-            <div class="auth-tabs">
-                <button id="login-tab" class="auth-tab active">Đăng nhập</button>
-                <button id="register-tab" class="auth-tab">Đăng ký</button>
-            </div>
-            
-            <div id="login-form" class="auth-form active">
-                <div class="form-group">
-                    <label for="login-username">Tên đăng nhập</label>
-                    <input type="text" id="login-username" placeholder="Nhập tên đăng nhập">
-                </div>
-                <div class="form-group">
-                    <label for="login-password">Mật khẩu</label>
-                    <input type="password" id="login-password" placeholder="Nhập mật khẩu">
-                </div>
-                <button id="login-button" class="auth-button ripple-btn">Đăng nhập</button>
-                <div id="login-error" class="error-message"></div>
-            </div>
-            
-            <div id="register-form" class="auth-form">
-                <div class="form-group">
-                    <label for="register-username">Tên đăng nhập</label>
-                    <input type="text" id="register-username" placeholder="Chọn tên đăng nhập">
-                </div>
-                <div class="form-group">
-                    <label for="register-password">Mật khẩu</label>
-                    <input type="password" id="register-password" placeholder="Tạo mật khẩu mới">
-                </div>
-                <div class="form-group">
-                    <label for="register-confirm">Xác nhận mật khẩu</label>
-                    <input type="password" id="register-confirm" placeholder="Nhập lại mật khẩu">
-                </div>
-                <button id="register-button" class="auth-button ripple-btn">Đăng ký</button>
-                <div id="register-error" class="error-message"></div>
-            </div>
-        </div>
-    </div>
-    
-    <footer>
-        <p>&copy; 2025 Code Supporter</p>
-    </footer>
-    
-    <script src="{{ url_for('static', filename='js/auth.js') }}"></script>
-</body>
-</html>
+/* !IMPORTANT - Applying background to multiple selectors for maximum browser compatibility */
+html, body, body.login-page, main, .login-container, .auth-container, .app-container {
+    background-color: #101010 !important;
+    background-image: 
+        radial-gradient(circle at top right, rgba(255, 80, 0, 0.5), transparent 70%),
+        radial-gradient(circle at bottom left, rgba(255, 80, 0, 0.5), transparent 70%) !important;
+    background-attachment: fixed !important;
+    background-position: top right, bottom left !important;
+    background-repeat: no-repeat !important;
+    background-size: 100% 100% !important;
+}/* Add stronger radial gradients using multiple methods for maximum compatibility */
+.app-container {
+    position: relative;
+    z-index: 1;
+    background-color: transparent !important;
+}
+
+.app-container::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    right: 0;
+    width: 100%;
+    height: 100%;
+    background: radial-gradient(circle at top right, rgba(255, 80, 0, 0.5), transparent 70%);
+    z-index: -1;
+    pointer-events: none;
+}
+
+.app-container::after {
+    content: '';
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: radial-gradient(circle at bottom left, rgba(255, 80, 0, 0.5), transparent 70%);
+    z-index: -1;
+    pointer-events: none;
+}
+
+/* Force background for login page */
+main, .auth-container, body.login-page {
+    background: linear-gradient(135deg, #101010, #1a1a1a),
+                radial-gradient(circle at top right, rgba(255, 80, 0, 0.5), transparent 70%),
+                radial-gradient(circle at bottom left, rgba(255, 80, 0, 0.5), transparent 70%) !important;
+    background-blend-mode: normal !important;
+}/* Alternative method using background-image for better compatibility */
+body, html {
+    background-color: #101010 !important;
+    color: var(--text-color);
+}
+
+body::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    right: 0;
+    width: 50%;
+    height: 50%;
+    background: radial-gradient(circle at top right, rgba(255, 80, 0, 0.4), transparent 70%);
+    z-index: -1;
+    pointer-events: none;
+}
+
+body::after {
+    content: '';
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 50%;
+    height: 50%;
+    background: radial-gradient(circle at bottom left, rgba(255, 80, 0, 0.4), transparent 70%);
+    z-index: -1;
+    pointer-events: none;
+}/* Enhanced lava theming for the chat interface */
+.chat-button, 
+.nav-button,
+a[href="/chat"], 
+a[href="/admin"],
+a.nav-link,
+button#theme-toggle,
+button#logout-button {
+    position: relative;
+    overflow: hidden;
+    background-color: rgba(0, 0, 0, 0.2) !important; /* Transparent background */
+    border: 1px solid rgba(255, 80, 0, 0.3);
+    color: var(--primary-color) !important;
+    box-shadow: 0 0 8px rgba(255, 40, 0, 0.3) !important;
+}
+
+.chat-button:hover, 
+.nav-button:hover,
+a[href="/chat"]:hover, 
+a[href="/admin"]:hover,
+a.nav-link:hover,
+button#theme-toggle:hover,
+button#logout-button:hover {
+    background-color: rgba(255, 80, 0, 0.15) !important;
+    border-color: rgba(255, 80, 0, 0.5);
+    box-shadow: 0 0 12px rgba(255, 40, 0, 0.5) !important;
+    transform: translateY(-1px);
+}
+
+/* For the SVG icons inside these buttons */
+.chat-button svg, 
+.nav-button svg,
+a[href="/chat"] svg, 
+a[href="/admin"] svg,
+a.nav-link svg,
+button#theme-toggle svg,
+button#logout-button svg {
+    fill: var(--primary-color);
+    stroke: var(--primary-color);
+    filter: drop-shadow(0 0 2px rgba(255, 80, 0, 0.5));
+}.input-container {
+    border-top: 2px solid var(--primary-color);
+    box-shadow: 0 -2px 10px rgba(255, 40, 0, 0.2);
+}
+
+#message-input:focus {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 2px rgba(255, 80, 0, 0.3);
+}
+
+/* Username display styling */
+#username-display {
+    color: var(--primary-color) !important;
+    background-color: rgba(255, 80, 0, 0.1); 
+    border: 1px solid rgba(255, 80, 0, 0.3);
+    box-shadow: 0 0 8px rgba(255, 40, 0, 0.3);
+    text-shadow: none;
+}/* Lava Dark Theme - Modified CSS for Code Supporter
+ * A dark theme with black, white, and lava orange accents
+ */
+
+:root {
+    /* Lava Dark theme with EXTRA VIBRANT lava orange (default dark) */
+    --primary-color: #FF5000; /* More vibrant lava orange primary */
+    --primary-hover: #FF6A00; /* Vibrant lava hover */
+    --secondary-color: #FF7800; /* Intense orange secondary */
+    --secondary-hover: #FF8C00; /* Darker orange */
+    --text-color: #FFFFFF; /* Pure white for text */
+    --text-muted: #B0BEC5; /* Light blue-grey for muted text */
+    --bg-color: #101010; /* Even darker black for background */
+    --card-bg: #1A1A1A; /* Slightly lighter black for cards */
+    --border-color: #333333; /* Dark grey for borders */
+    --error-color: #F44336; /* Red for errors */
+    --success-color: #4CAF50; /* Green for success */
+    --warning-color: #FFC107; /* Amber for warnings */
+    --input-bg: #242424; /* Dark input background */
+    --shadow-color: rgba(0, 0, 0, 0.5); /* Darker shadows */
+    --code-bg: #1A1A1A; /* Slightly lighter black for code blocks */
+    --accent-color: #FF3000; /* Even deeper lava accent */
+    --gradient-start: #FF5000; /* Super vibrant lava orange */
+    --gradient-end: #FF2800; /* Intense red-orange */
+    --transition-speed: 0.3s;
+}
+
+/* Light theme variant with lava accents */
+body.light-mode {
+    --primary-color: #FF5722; /* Lava orange primary */
+    --primary-hover: #E64A19; /* Darker lava for hover */
+    --secondary-color: #FF9800; /* Orange secondary */
+    --secondary-hover: #F57C00; /* Darker orange for hover */
+    --text-color: #212121; /* Near black for text */
+    --text-muted: #757575; /* Grey for muted text */
+    --bg-color: #F5F5F5; /* Off-white background */
+    --card-bg: #FFFFFF; /* Pure white for cards */
+    --border-color: #E0E0E0; /* Light grey for borders */
+    --error-color: #F44336; /* Red */
+    --success-color: #4CAF50; /* Green */
+    --warning-color: #FFC107; /* Amber */
+    --input-bg: #FAFAFA; /* Nearly white input background */
+    --shadow-color: rgba(0, 0, 0, 0.1); /* Light shadows */
+    --code-bg: #F5F5F5; /* Off-white code background */
+    --accent-color: #FF3D00; /* Deep lava accent */
+    --gradient-start: #FF5722; /* Lava orange */
+    --gradient-end: #FF8A65; /* Lighter lava */
+    --transition-speed: 0.3s;
+}
+
+/* Additional styles for the chat page */
+.app-header {
+    border-bottom: 2px solid var(--primary-color);
+    box-shadow: 0 2px 10px rgba(255, 40, 0, 0.3);
+}
+
+/* Brand/Logo styling - keep text visible with transparent background */
+.brand h1, .Code, .Supporter {
+    color: var(--primary-color) !important;
+    text-shadow: 0 0 5px rgba(255, 40, 0, 0.3);
+}
+
+/* Fix for hover on navigation buttons to keep text visible */
+.nav-link:hover, #theme-toggle:hover, #logout-button:hover {
+    background-color: rgba(255, 80, 0, 0.2); /* Transparent background */
+    color: var(--primary-color) !important;
+    box-shadow: 0 0 8px rgba(255, 80, 0, 0.4);
+    text-shadow: 0 0 5px rgba(255, 40, 0, 0.3);
+}
+
+/* Add shadow to navigation buttons even when not hovered */
+.nav-link, #theme-toggle, #logout-button, .chat-button {
+    box-shadow: 0 0 5px rgba(255, 80, 0, 0.2);
+    transition: all 0.3s ease;
+}
+
+/* Book icon in lava color */
+.brand svg, .brand-logo svg, .logo svg, .app-header svg {
+    fill: var(--primary-color) !important;
+    filter: drop-shadow(0 0 3px rgba(255, 80, 0, 0.5));
+}
+
+/* Add some ultra vibrant lava-themed enhancement classes */
+.lava-card {
+    border-left: 3px solid var(--primary-color);
+    transition: all 0.3s ease;
+}
+
+.lava-card:hover {
+    border-left-width: 6px;
+    transform: translateX(3px);
+}
+
+.lava-button {
+    background: linear-gradient(135deg, var(--primary-color), var(--accent-color));
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 4px;
+    box-shadow: 0 2px 5px rgba(255, 87, 34, 0.3);
+    transition: all 0.3s;
+}
+
+.lava-button:hover {
+    box-shadow: 0 4px 8px rgba(255, 87, 34, 0.5);
+    transform: translateY(-2px);
+}
+
+/* Custom glowing effect for certain elements */
+@keyframes lavaGlow {
+    0% { box-shadow: 0 0 5px rgba(255, 87, 34, 0.5); }
+    50% { box-shadow: 0 0 15px rgba(255, 87, 34, 0.8); }
+    100% { box-shadow: 0 0 5px rgba(255, 87, 34, 0.5); }
+}
+
+.lava-glow {
+    animation: lavaGlow 2s infinite;
+}
+
+/* Enhanced styling for the chat interface */
+.message.bot-message {
+    border-left: 4px solid var(--primary-color); /* Thicker border */
+    box-shadow: -2px 0 8px rgba(255, 80, 0, 0.3); /* Glow effect on border */
+}
+
+.message.user-message {
+    background: linear-gradient(135deg, var(--primary-color), var(--accent-color));
+    box-shadow: 0 4px 15px rgba(255, 40, 0, 0.3); /* Add glow effect */
+}
+
+#send-button {
+    background: linear-gradient(135deg, var(--primary-color), var(--accent-color));
+    box-shadow: 0 4px 12px rgba(255, 40, 0, 0.5); /* Stronger glow */
+}
+
+#send-button:hover {
+    box-shadow: 0 4px 15px rgba(255, 40, 0, 0.7); /* Even stronger glow on hover */
+    transform: translateY(-2px);
+}
+
+.cs-chat-button, .cs-send-button {
+    background: linear-gradient(135deg, var(--primary-color), var(--accent-color));
+    box-shadow: 0 4px 12px rgba(255, 40, 0, 0.5); /* Stronger glow */
+}
+
+/* Login page specific styling - with more oranges as requested */
+.auth-header {
+    background: linear-gradient(135deg, #FF5000, #FF2800); /* SUPER intense orange gradient */
+    padding: 30px 24px;
+    text-align: center;
+    border-bottom: 4px solid #FF3000; /* Vibrant orange border */
+    box-shadow: 0 4px 15px rgba(255, 40, 0, 0.3); /* Extra glow effect */
+}
+
+.auth-button, 
+.primary-button, 
+button[id*="login-button"], 
+button[id*="register-button"] {
+    background: linear-gradient(135deg, #FF5000, #FF2800); /* SUPER intense orange gradient */
+    border: none;
+    box-shadow: 0 4px 15px rgba(255, 40, 0, 0.4); /* Stronger glow */
+    transition: all 0.3s ease;
+}
+
+.auth-button:hover, 
+.primary-button:hover, 
+button[id*="login-button"]:hover, 
+button[id*="register-button"]:hover {
+    background: linear-gradient(135deg, #FF6000, #FF3800); /* Slightly lighter on hover */
+    box-shadow: 0 6px 20px rgba(255, 40, 0, 0.6); /* Stronger glow on hover */
+    transform: translateY(-2px);
+}
+
+.auth-tab.active {
+    color: #FF5000; /* Match active tab color to new vibrant orange */
+    border-bottom-color: #FF5000;
+}
+
+.auth-tab.active:before {
+    background-color: #FF5000;
+}
+
+/* Add STRONGER lava gradient background to login page - make it more visible */
+body, html, .app-container, main {
+    background-color: #101010 !important;
+}
+
+.auth-container, body.login-page, .login-container {
+    position: relative;
+    background: #101010 !important;
+    overflow: hidden;
+}
+
+.auth-container::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 100%;
+    height: 100%;
+    background: radial-gradient(circle at top right, rgba(255, 80, 0, 0.4) 0%, transparent 60%);
+    z-index: 0;
+    opacity: 0.8;
+}
+
+.auth-container::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: radial-gradient(circle at bottom left, rgba(255, 80, 0, 0.4) 0%, transparent 60%);
+    z-index: 0;
+    opacity: 0.8;
+}
+
+.auth-card {
+    position: relative;
+    z-index: 10; /* Ensure card is above the gradients */
+}
+
+/* Make sure the book logo in login screen is lava orange instead of blue */
+.auth-container .logo-container svg,
+.auth-container .logo svg,
+.logo-text,
+.auth-container svg {
+    fill: var(--primary-color) !important;
+    stroke: var(--primary-color) !important;
+    color: var(--primary-color) !important;
+    filter: drop-shadow(0 0 5px rgba(255, 80, 0, 0.5));
+}
+
+/* Use webkit background clip for the gradient text */
+.logo-text, .brand h1 {
+    background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+    -webkit-background-clip: text !important;
+    -webkit-text-fill-color: transparent !important;
+    background-clip: text !important;
+    filter: drop-shadow(0 0 2px rgba(255, 80, 0, 0.3));
+}
+
+/* Special effects for code blocks and other highlights */
+pre, .code-block {
+    border-left: 4px solid var(--primary-color);
+    box-shadow: 0 4px 15px rgba(255, 40, 0, 0.2);
+}
+
+pre .copy-code-btn, .copy-button {
+    background-color: var(--primary-color);
+    color: white;
+    box-shadow: 0 2px 6px rgba(255, 40, 0, 0.4);
+}
+
+pre .copy-code-btn:hover, .copy-button:hover {
+    background-color: var(--secondary-color);
+    box-shadow: 0 2px 8px rgba(255, 40, 0, 0.6);
+}
+
+/* Super vibrant effect for links and interactive elements */
+a, .interactive, .clickable, .selectable {
+    color: var(--primary-color);
+    transition: all 0.3s;
+}
+
+a:hover, .interactive:hover, .clickable:hover, .selectable:hover {
+    color: var(--secondary-color);
+    text-shadow: 0 0 5px rgba(255, 120, 0, 0.5);
+}
+
+/* How to apply this theme:
+ * 1. Add this CSS file to your project
+ * 2. Link it in your HTML after the original style.css
+ * 3. Or copy the :root variables into your existing style.css
+ * 
+ * MODIFICATIONS FOR SPECIFIC REQUIREMENTS:
+ * - No orange border around logo (only text is orange)
+ * - Chat/API Keys buttons maintain text visibility on hover
+ * - Added lava-themed shadows to navigation elements
+ * - Login background is now black with STRONG lava gradients
+ * - Book logo in login screen is now lava orange instead of blue
+ * - Multiple background application methods for maximum compatibility
+ */
