@@ -29,14 +29,6 @@ app = Flask(__name__,
            template_folder='templates',
            static_folder='static')
 # Thay đổi cấu hình CORS
-CORS(app, resources={
-    r"/api/*": {
-        "origins": "*", 
-        "allow_headers": ["Content-Type", "X-API-Key", "Authorization"],
-        "methods": ["GET", "POST", "OPTIONS"],
-        "supports_credentials": True
-    }
-}, supports_credentials=True)
 
 # Secret key cho JWT
 SECRET_KEY = os.getenv('API_SECRET_KEY', 'default_secret_key')
@@ -112,15 +104,6 @@ def admin_page(current_user):
 
 # Đăng ký Blueprint API
 app.register_blueprint(api_bp, url_prefix='/api')
-
-@app.before_request
-def handle_preflight():
-    if request.method == "OPTIONS":
-        response = make_response()
-        response.headers.add("Access-Control-Allow-Origin", "*")
-        response.headers.add("Access-Control-Allow-Headers", "Content-Type,X-API-Key,Authorization")
-        response.headers.add("Access-Control-Allow-Methods", "GET,POST,OPTIONS")
-        return response
 
 # --- Khởi động ứng dụng ---
 if __name__ == '__main__':
