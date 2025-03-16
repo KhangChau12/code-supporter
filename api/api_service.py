@@ -151,6 +151,10 @@ def get_conversations(current_user):
 def get_conversation(current_user, conversation_id):
     """Lấy chi tiết một hội thoại cụ thể"""
     try:
+        # Kiểm tra tính hợp lệ của conversation_id
+        if not conversation_id:
+            return jsonify({"error": "ID hội thoại không được để trống"}), 400
+            
         # Kiểm tra quyền truy cập hội thoại
         if not storage_service.check_conversation_access(current_user, conversation_id):
             return jsonify({"error": "Bạn không có quyền truy cập hội thoại này"}), 403

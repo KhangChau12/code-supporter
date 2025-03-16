@@ -619,12 +619,12 @@ document.addEventListener('DOMContentLoaded', function() {
         let apiURL = '/api/chat/stream';
         let apiMethod = 'POST';
         let apiBody = { message };
-        
+
         // Nếu đang trong một hội thoại cụ thể, thêm conversation_id
-        if (currentConversationId) {
+        if (currentConversationId) {  // Thêm kiểm tra null/undefined
             apiBody.conversation_id = currentConversationId;
         }
-        
+
         // Sử dụng fetch để kết nối tới API stream
         streamChatResponse(message, typingIndicator, apiURL, apiMethod, apiBody);
     }

@@ -423,62 +423,63 @@ class StorageService:
             logger.error(f"Lỗi khi lưu tin nhắn: {str(e)}")
             return False
     
-    def get_conversation_history(self, username: str, limit: int = 10) -> List[Dict[str, str]]:
-        """Lấy lịch sử hội thoại của người dùng"""
+    def get_conversation(self, conversation_id: str) -> Optional[Dict]:
+        """
+        Lấy thông tin hội thoại
+        
+        Args:
+            conversation_id (str): ID hội thoại
+            
+        Returns:
+            Optional[Dict]: Thông tin hội thoại hoặc None nếu không tìm thấy
+        """
         try:
+            if not conversation_id:
+                return None
+                
             if self.storage_type == "mongodb":
-                conversations = list(self.db.conversations.find(
-                    {"username": username}
-                ).sort("timestamp", -1).limit(limit))
+                try:
+                    obj_id = ObjectId(conversation_id) if isinstance(conversation_id, str) else conversation_id
+                except:
+                    return None
+                    
+                conversation = self.db.conversations.find_one({
+                    "_id": obj_id,
+                    "deleted": {"$ne": True}
+                })
                 
-                # Đảo ngược để có thứ tự đúng (cũ đến mới)
-                conversations.reverse()
+                if not conversation:
+                    return None
                 
-                return [{
-                    "role": conv["role"],
-                    "content": conv["content"]
-                } for conv in conversations]
-                
+                return self._sanitize_mongodb_doc(conversation)
             else:
-                # Lưu trữ file - cải tiến để đọc từ nhiều file theo tháng
-                conversation_dir = os.path.join(self.data_dir, "conversations", username)
+                # Lưu trữ file - tìm trong tất cả người dùng
+                conversations_dir = os.path.join(self.data_dir, "conversations")
                 
-                if not os.path.exists(conversation_dir):
-                    return []
-                
-                # Lấy danh sách các file hội thoại theo tháng
-                conversation_files = sorted([
-                    f for f in os.listdir(conversation_dir) 
-                    if f.endswith('.json')
-                ], reverse=True)
-                
-                all_conversations = []
-                
-                # Đọc từ các file gần đây nhất cho đến khi đủ limit
-                for file_name in conversation_files:
-                    file_path = os.path.join(conversation_dir, file_name)
+                # Tìm trong thư mục của tất cả người dùng
+                for user_dir in os.listdir(conversations_dir):
+                    if not os.path.isdir(os.path.join(conversations_dir, user_dir)):
+                        continue
                     
-                    with open(file_path, "r", encoding="utf-8") as f:
-                        month_conversations = json.load(f)
+                    meta_dir = os.path.join(conversations_dir, user_dir, "metadata")
+                    if not os.path.exists(meta_dir):
+                        continue
                     
-                    # Sắp xếp theo thời gian
-                    month_conversations.sort(key=lambda x: x["timestamp"])
-                    all_conversations.extend(month_conversations)
-                    
-                    if len(all_conversations) >= limit:
-                        break
+                    meta_file = os.path.join(meta_dir, f"{conversation_id}.json")
+                    if os.path.exists(meta_file):
+                        with open(meta_file, "r", encoding="utf-8") as f:
+                            conversation = json.load(f)
+                        
+                        # Kiểm tra nếu đã xóa
+                        if conversation.get("deleted", False):
+                            return None
+                        
+                        return conversation
                 
-                # Lấy limit tin nhắn gần nhất
-                recent_conversations = all_conversations[-limit:] if len(all_conversations) > limit else all_conversations
-                
-                return [{
-                    "role": conv["role"],
-                    "content": conv["content"]
-                } for conv in recent_conversations]
-                
+                return None
         except Exception as e:
-            logger.error(f"Lỗi khi lấy lịch sử hội thoại: {str(e)}")
-            return []
+            logger.error(f"Lỗi khi lấy thông tin hội thoại: {str(e)}")
+            return None
     
     def delete_conversations(self, username: str) -> bool:
         """Xóa tất cả lịch sử hội thoại của người dùng"""
@@ -1327,10 +1328,22 @@ class StorageService:
             bool: True nếu có quyền truy cập, False nếu không
         """
         try:
+            # Kiểm tra conversation_id có giá trị không
+            if not conversation_id:
+                return False
+                
             if self.storage_type == "mongodb":
-                conversation = self.db.conversations.find_one({
-                    "_id": ObjectId(conversation_id) if isinstance(conversation_id, str) else conversation_id
-                })
+                # Kiểm tra xem conversation_id có phải là chuỗi hợp lệ để chuyển thành ObjectId không
+                if isinstance(conversation_id, str) and len(conversation_id) != 24:
+                    return False
+                    
+                try:
+                    obj_id = ObjectId(conversation_id) if isinstance(conversation_id, str) else conversation_id
+                except:
+                    # Nếu không thể chuyển đổi thành ObjectId, trả về False
+                    return False
+                    
+                conversation = self.db.conversations.find_one({"_id": obj_id})
                 
                 if not conversation:
                     return False
@@ -1414,9 +1427,17 @@ class StorageService:
             List[Dict]: Danh sách tin nhắn
         """
         try:
+            if not conversation_id:
+                return []
+                
             if self.storage_type == "mongodb":
+                try:
+                    obj_id = ObjectId(conversation_id) if isinstance(conversation_id, str) else conversation_id
+                except:
+                    return []
+                    
                 messages = list(self.db.conversation_messages.find(
-                    {"conversation_id": ObjectId(conversation_id) if isinstance(conversation_id, str) else conversation_id}
+                    {"conversation_id": obj_id}
                 ).sort("timestamp", 1))
                 
                 return [self._sanitize_mongodb_doc(msg) for msg in messages]
