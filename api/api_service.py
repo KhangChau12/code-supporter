@@ -863,12 +863,3 @@ def options_chat_public_stream():
     response.headers.add("Access-Control-Allow-Headers", "Content-Type, X-API-Key, Authorization")
     response.headers.add("Access-Control-Allow-Methods", "POST, OPTIONS")
     return response
-
-# Thêm xử lý CORS chung cho tất cả các API endpoints
-@api_bp.after_request
-def add_cors_headers(response):
-    if request.method != 'OPTIONS':  # Không xử lý preflight requests tại đây
-        response.headers.add('Access-Control-Allow-Origin', '*')
-        response.headers.add('Access-Control-Allow-Headers', 'Content-Type, X-API-Key, Authorization')
-        response.headers.add('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
-    return response

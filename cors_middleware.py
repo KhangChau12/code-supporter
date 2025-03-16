@@ -19,15 +19,17 @@ class CORSMiddleware:
 
         # Xử lý response cho các request khác
         def custom_start_response(status, headers, exc_info=None):
-            # Thêm CORS headers vào response
-            cors_headers = [
-                ('Access-Control-Allow-Origin', '*'),
-                ('Access-Control-Allow-Methods', 'GET, POST, OPTIONS'),
-                ('Access-Control-Allow-Headers', 'Content-Type, X-API-Key, Authorization')
-            ]
+            # Kiểm tra xem CORS header đã tồn tại chưa
+            existing_headers = dict(headers)
+            new_headers = list(headers)
             
-            # Kết hợp headers hiện có với CORS headers
-            new_headers = list(headers) + cors_headers
+            # Chỉ thêm header nếu chưa tồn tại
+            if 'Access-Control-Allow-Origin' not in existing_headers:
+                new_headers.append(('Access-Control-Allow-Origin', '*'))
+            if 'Access-Control-Allow-Methods' not in existing_headers:
+                new_headers.append(('Access-Control-Allow-Methods', 'GET, POST, OPTIONS'))
+            if 'Access-Control-Allow-Headers' not in existing_headers:
+                new_headers.append(('Access-Control-Allow-Headers', 'Content-Type, X-API-Key, Authorization'))
             
             # Gọi hàm start_response ban đầu với headers đã được cập nhật
             return start_response(status, new_headers, exc_info)
