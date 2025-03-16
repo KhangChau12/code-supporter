@@ -697,43 +697,59 @@
     }
     
     async callChatAPI(message) {
-      const headers = {
-        'Content-Type': 'application/json'
-      };
-      
-      // Thêm API key nếu có
-      if (this.config.apiKey) {
-        headers['X-API-Key'] = this.config.apiKey;
+      try {
+          // Luôn đảm bảo sử dụng HTTPS cho URL API
+          let apiUrl = this.config.apiUrl;
+          if (apiUrl.startsWith('http:')) {
+              apiUrl = apiUrl.replace('http:', 'https:');
+          }
+          
+          console.log("Gửi request đến:", apiUrl);
+          
+          const headers = {
+              'Content-Type': 'application/json'
+          };
+          
+          // Thêm API key nếu có
+          if (this.config.apiKey) {
+              headers['X-API-Key'] = this.config.apiKey;
+          }
+          
+          // Chuẩn bị dữ liệu gửi đi
+          const requestData = {
+              message: message,
+              conversation_history: this.conversationHistory.slice(-10), // Gửi 10 tin nhắn gần nhất
+              session_id: this.config.sessionId
+          };
+          
+          // Thêm user_id và user_info nếu có
+          if (this.config.userId) {
+              requestData.user_id = this.config.userId;
+          }
+          
+          if (this.config.userInfo) {
+              requestData.user_info = this.config.userInfo;
+          }
+          
+          const response = await fetch(apiUrl, {
+              method: 'POST',
+              headers: headers,
+              body: JSON.stringify(requestData),
+              mode: 'cors', // Thêm mode: 'cors' để xử lý CORS đúng cách
+              credentials: 'omit' // Không gửi cookie để tránh vấn đề CORS phức tạp
+          });
+          
+          if (!response.ok) {
+              console.error(`Lỗi API: ${response.status} - ${response.statusText}`);
+              throw new Error(`API responded with status ${response.status}`);
+          }
+          
+          return await response.json();
+      } catch (error) {
+          console.error("Error calling Chat API:", error);
+          throw error; // Ném lỗi để xử lý ở nơi gọi hàm
       }
-      
-      // Chuẩn bị dữ liệu gửi đi
-      const requestData = {
-        message: message,
-        conversation_history: this.conversationHistory.slice(-10), // Gửi 10 tin nhắn gần nhất
-        session_id: this.config.sessionId
-      };
-      
-      // Thêm user_id và user_info nếu có
-      if (this.config.userId) {
-        requestData.user_id = this.config.userId;
-      }
-      
-      if (this.config.userInfo) {
-        requestData.user_info = this.config.userInfo;
-      }
-      
-      const response = await fetch(this.config.apiUrl, {
-        method: 'POST',
-        headers: headers,
-        body: JSON.stringify(requestData)
-      });
-      
-      if (!response.ok) {
-        throw new Error(`API responded with status ${response.status}`);
-      }
-      
-      return await response.json();
-    }
+  }
     
     // Phương thức để thiết lập hoặc cập nhật userId
     setUserId(userId, userInfo = null) {

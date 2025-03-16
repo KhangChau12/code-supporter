@@ -113,6 +113,15 @@ def admin_page(current_user):
 # Đăng ký Blueprint API
 app.register_blueprint(api_bp, url_prefix='/api')
 
+@app.before_request
+def handle_preflight():
+    if request.method == "OPTIONS":
+        response = make_response()
+        response.headers.add("Access-Control-Allow-Origin", "*")
+        response.headers.add("Access-Control-Allow-Headers", "Content-Type,X-API-Key,Authorization")
+        response.headers.add("Access-Control-Allow-Methods", "GET,POST,OPTIONS")
+        return response
+
 # --- Khởi động ứng dụng ---
 if __name__ == '__main__':
     # Lấy cấu hình từ biến môi trường
