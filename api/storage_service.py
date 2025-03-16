@@ -1765,6 +1765,228 @@ class StorageService:
             logger.error(f"Lỗi khi xóa tất cả hội thoại: {str(e)}")
             return False
 
+    def update_conversation(self, conversation_id: str, update_data: Dict) -> bool:
+        """
+        Cập nhật thông tin hội thoại
+        
+        Args:
+            conversation_id (str): ID hội thoại
+            update_data (Dict): Dữ liệu cập nhật (ví dụ: {"title": "Tiêu đề mới"})
+                
+        Returns:
+            bool: True nếu thành công, False nếu thất bại
+        """
+        try:
+            if not conversation_id:
+                logger.warning("Conversation ID rỗng khi cập nhật hội thoại")
+                return False
+                    
+            if self.storage_type == "mongodb":
+                obj_id = None
+                try:
+                    if self._is_valid_object_id(conversation_id):
+                        obj_id = ObjectId(conversation_id)
+                    else:
+                        logger.warning(f"Conversation ID không phải ObjectId hợp lệ khi cập nhật: {conversation_id}")
+                        return False
+                except Exception as e:
+                    logger.error(f"Lỗi chuyển đổi conversation_id sang ObjectId: {str(e)}")
+                    return False
+                    
+                # Thêm thời gian cập nhật
+                update_data["updated_at"] = datetime.now()
+                
+                # Cập nhật dữ liệu
+                result = self.db.conversations.update_one(
+                    {"_id": obj_id, "deleted": {"$ne": True}},
+                    {"$set": update_data}
+                )
+                
+                return result.modified_count > 0
+            else:
+                # Lưu trữ file - tìm trong tất cả người dùng
+                conversations_dir = os.path.join(self.data_dir, "conversations")
+                
+                # Tìm trong thư mục của tất cả người dùng
+                for user_dir in os.listdir(conversations_dir):
+                    if not os.path.isdir(os.path.join(conversations_dir, user_dir)):
+                        continue
+                    
+                    meta_dir = os.path.join(conversations_dir, user_dir, "metadata")
+                    if not os.path.exists(meta_dir):
+                        continue
+                    
+                    meta_file = os.path.join(meta_dir, f"{conversation_id}.json")
+                    if os.path.exists(meta_file):
+                        # Đọc dữ liệu hiện tại
+                        with open(meta_file, "r", encoding="utf-8") as f:
+                            conversation = json.load(f)
+                        
+                        # Kiểm tra nếu đã xóa
+                        if conversation.get("deleted", False):
+                            return False
+                        
+                        # Cập nhật dữ liệu
+                        conversation.update(update_data)
+                        conversation["updated_at"] = datetime.now().isoformat()
+                        
+                        # Lưu lại
+                        with open(meta_file, "w", encoding="utf-8") as f:
+                            json.dump(conversation, f, ensure_ascii=False, indent=2)
+                        
+                        return True
+                
+                logger.warning(f"Không tìm thấy hội thoại để cập nhật: {conversation_id}")
+                return False
+        except Exception as e:
+            logger.error(f"Lỗi khi cập nhật hội thoại: {str(e)}")
+            return False
+    
+    def delete_conversation(self, conversation_id: str) -> bool:
+        """
+        Xóa hội thoại (soft delete)
+        
+        Args:
+            conversation_id (str): ID hội thoại
+                
+        Returns:
+            bool: True nếu thành công, False nếu thất bại
+        """
+        try:
+            if not conversation_id:
+                logger.warning("Conversation ID rỗng khi xóa hội thoại")
+                return False
+                    
+            # Kiểm tra ID hợp lệ
+            timestamp = datetime.now()
+            
+            if self.storage_type == "mongodb":
+                obj_id = None
+                try:
+                    if self._is_valid_object_id(conversation_id):
+                        obj_id = ObjectId(conversation_id)
+                    else:
+                        logger.warning(f"Conversation ID không phải ObjectId hợp lệ khi xóa: {conversation_id}")
+                        return False
+                except Exception as e:
+                    logger.error(f"Lỗi chuyển đổi conversation_id sang ObjectId: {str(e)}")
+                    return False
+                    
+                # Soft delete - chỉ đánh dấu là đã xóa thay vì xóa hoàn toàn
+                result = self.db.conversations.update_one(
+                    {"_id": obj_id, "deleted": {"$ne": True}},
+                    {
+                        "$set": {
+                            "deleted": True,
+                            "deleted_at": timestamp
+                        }
+                    }
+                )
+                
+                return result.modified_count > 0
+            else:
+                # Lưu trữ file - tìm trong tất cả người dùng
+                conversations_dir = os.path.join(self.data_dir, "conversations")
+                
+                # Tìm trong thư mục của tất cả người dùng
+                for user_dir in os.listdir(conversations_dir):
+                    if not os.path.isdir(os.path.join(conversations_dir, user_dir)):
+                        continue
+                    
+                    meta_dir = os.path.join(conversations_dir, user_dir, "metadata")
+                    if not os.path.exists(meta_dir):
+                        continue
+                    
+                    meta_file = os.path.join(meta_dir, f"{conversation_id}.json")
+                    if os.path.exists(meta_file):
+                        # Đọc dữ liệu hiện tại
+                        with open(meta_file, "r", encoding="utf-8") as f:
+                            conversation = json.load(f)
+                        
+                        # Kiểm tra nếu đã xóa rồi
+                        if conversation.get("deleted", False):
+                            return False
+                        
+                        # Đánh dấu là đã xóa
+                        conversation["deleted"] = True
+                        conversation["deleted_at"] = timestamp.isoformat()
+                        
+                        # Lưu lại
+                        with open(meta_file, "w", encoding="utf-8") as f:
+                            json.dump(conversation, f, ensure_ascii=False, indent=2)
+                        
+                        return True
+                
+                logger.warning(f"Không tìm thấy hội thoại để xóa: {conversation_id}")
+                return False
+        except Exception as e:
+            logger.error(f"Lỗi khi xóa hội thoại: {str(e)}")
+            return False
+    
+    def delete_all_conversations(self, username: str) -> bool:
+        """
+        Xóa tất cả hội thoại của người dùng (soft delete)
+        
+        Args:
+            username (str): Tên người dùng
+                
+        Returns:
+            bool: True nếu thành công, False nếu thất bại
+        """
+        try:
+            timestamp = datetime.now()
+            
+            if self.storage_type == "mongodb":
+                # Soft delete tất cả hội thoại của người dùng
+                result = self.db.conversations.update_many(
+                    {"username": username, "deleted": {"$ne": True}},
+                    {
+                        "$set": {
+                            "deleted": True,
+                            "deleted_at": timestamp
+                        }
+                    }
+                )
+                
+                return True  # Luôn trả về True, ngay cả khi không có hội thoại nào bị xóa
+            else:
+                # Lưu trữ file
+                conversations_dir = os.path.join(self.data_dir, "conversations")
+                user_dir = os.path.join(conversations_dir, username)
+                
+                if not os.path.exists(user_dir):
+                    return True  # Không có thư mục người dùng, coi như thành công
+                
+                # Lấy danh sách file hội thoại metadata
+                meta_dir = os.path.join(user_dir, "metadata")
+                if not os.path.exists(meta_dir):
+                    return True  # Không có thư mục metadata, coi như thành công
+                
+                # Đánh dấu tất cả hội thoại là đã xóa
+                meta_files = [f for f in os.listdir(meta_dir) if f.endswith('.json')]
+                
+                for meta_file in meta_files:
+                    file_path = os.path.join(meta_dir, meta_file)
+                    try:
+                        with open(file_path, "r", encoding="utf-8") as f:
+                            conversation = json.load(f)
+                        
+                        # Đánh dấu là đã xóa (nếu chưa xóa)
+                        if not conversation.get("deleted", False):
+                            conversation["deleted"] = True
+                            conversation["deleted_at"] = timestamp.isoformat()
+                            
+                            # Lưu lại
+                            with open(file_path, "w", encoding="utf-8") as f:
+                                json.dump(conversation, f, ensure_ascii=False, indent=2)
+                    except Exception as e:
+                        logger.error(f"Lỗi khi đánh dấu xóa file hội thoại: {str(e)}")
+                
+                return True
+        except Exception as e:
+            logger.error(f"Lỗi khi xóa tất cả hội thoại: {str(e)}")
+            return False
+    
     def get_conversations_count(self, username: str) -> int:
         """
         Đếm tổng số hội thoại của người dùng
