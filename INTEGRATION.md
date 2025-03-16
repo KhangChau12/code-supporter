@@ -1,49 +1,51 @@
-# Hướng dẫn tích hợp Code Supporter
+# Code Supporter Integration Guide
 
-Tài liệu này hướng dẫn chi tiết cách tích hợp Code Supporter Chatbot vào trang web, ứng dụng hoặc nền tảng học tập của bạn.
+This guide provides detailed instructions on how to integrate the Code Supporter chatbot into your website, application, or learning platform.
 
-## Mục lục
-- [Tổng quan](#tổng-quan)
-- [Tạo API Key](#tạo-api-key)
-- [Sử dụng JavaScript Widget](#sử-dụng-javascript-widget)
-- [Gọi API trực tiếp](#gọi-api-trực-tiếp)
-- [Tùy chỉnh Widget](#tùy-chỉnh-widget)
-- [Xử lý lỗi thường gặp](#xử-lý-lỗi-thường-gặp)
-- [Ví dụ tích hợp](#ví-dụ-tích-hợp)
+## Table of Contents
+- [Overview](#overview)
+- [Creating an API Key](#creating-an-api-key)
+- [JavaScript Widget Integration](#javascript-widget-integration)
+- [Direct API Integration](#direct-api-integration)
+- [Widget Customization](#widget-customization)
+- [Troubleshooting](#troubleshooting)
+- [Integration Examples](#integration-examples)
+- [API Versioning](#api-versioning)
+- [Support](#support)
 
-## Tổng quan
+## Overview
 
-Code Supporter cung cấp hai cách chính để tích hợp:
+Code Supporter offers two main integration methods:
 
-1. **JavaScript Widget**: Cách đơn giản nhất để thêm chatbot vào trang web
-2. **API Endpoints**: Cho phép tùy chỉnh hoàn toàn trải nghiệm người dùng
+1. **JavaScript Widget**: The simplest way to add the chatbot to your website
+2. **Direct API Integration**: For complete customization of the user experience
 
-## Tạo API Key
+## Creating an API Key
 
-Trước khi bắt đầu tích hợp, bạn cần tạo API Key:
+Before starting integration, you need to create an API Key:
 
-1. Đăng nhập vào hệ thống Code Supporter
-2. Chuyển đến trang Admin
-3. Trong phần "Quản lý API Key", nhập tên cho API key mới
-4. Chọn quyền hạn cần thiết:
-   - **Chat API**: Cho phép gọi API chat cơ bản
-   - **Stream API**: Cho phép gọi API chat với phản hồi kiểu stream
-5. Nhấn "Tạo API Key"
-6. Lưu lại cả API Key và API Secret (API Secret sẽ không hiển thị lại sau khi rời khỏi trang)
+1. Log in to your Code Supporter account
+2. Navigate to the Admin page
+3. In the "API Key Management" section, enter a name for your new API key
+4. Select the required permissions:
+   - **Chat API**: Allows basic chat API calls
+   - **Stream API**: Allows streaming chat API calls
+5. Click "Create API Key"
+6. Save both the API Key and API Secret (the API Secret will not be shown again after leaving the page)
 
-## Sử dụng JavaScript Widget
+## JavaScript Widget Integration
 
-### Thêm Script
+### Adding the Script
 
-Thêm đoạn mã sau vào phần `<head>` hoặc cuối `<body>` của trang web:
+Add the following code to the `<head>` or end of the `<body>` of your web page:
 
 ```html
 <script src="https://your-code-supporter-domain.com/static/js/codesupporter-widget.js"></script>
 ```
 
-### Khởi tạo Widget
+### Initializing the Widget
 
-Thêm đoạn mã sau để khởi tạo widget:
+Add the following code to initialize the widget:
 
 ```html
 <script>
@@ -54,17 +56,17 @@ Thêm đoạn mã sau để khởi tạo widget:
             position: 'bottom-right',
             theme: 'dark',
             chatTitle: 'Code Supporter',
-            initialMessage: 'Xin chào! Tôi có thể giúp gì cho bạn với bài tập lập trình?'
+            initialMessage: 'Hello! How can I help with your programming questions?'
         });
     });
 </script>
 ```
 
-## Gọi API trực tiếp
+## Direct API Integration
 
-Nếu bạn muốn tùy chỉnh giao diện hoàn toàn, bạn có thể gọi API trực tiếp.
+If you want to completely customize the interface, you can call the API directly.
 
-### API Chat
+### Chat API
 
 **Endpoint**: `POST /api/chat/public`
 
@@ -77,117 +79,117 @@ X-API-Key: YOUR_API_KEY_HERE
 **Request Body**:
 ```json
 {
-    "message": "Làm thế nào để viết hàm đệ quy tính giai thừa trong Python?",
+    "message": "How do I write a recursive function to calculate factorial in Python?",
     "conversation_history": [
-        {"role": "user", "content": "Xin chào"},
-        {"role": "assistant", "content": "Xin chào! Tôi có thể giúp gì cho bạn?"}
+        {"role": "user", "content": "Hello"},
+        {"role": "assistant", "content": "Hello! How can I help you?"}
     ],
     "session_id": "unique-session-id-123"
 }
 ```
 
-**Giải thích các trường**:
-- `message`: Tin nhắn của người dùng
-- `conversation_history` (tùy chọn): Lịch sử hội thoại để duy trì ngữ cảnh
-- `session_id` (tùy chọn): ID định danh phiên chat
+**Field Descriptions**:
+- `message`: The user's message
+- `conversation_history` (optional): Conversation history to maintain context
+- `session_id` (optional): Session identifier
 
 **Response**:
 ```json
 {
-    "reply": "Để viết hàm đệ quy tính giai thừa trong Python, bạn có thể làm như sau:\n\n```python\ndef factorial(n):\n    if n == 0 or n == 1:\n        return 1\n    else:\n        return n * factorial(n-1)\n```\n\nHàm này hoạt động bằng cách...",
+    "reply": "To write a recursive function for calculating factorials in Python, you can do the following:\n\n```python\ndef factorial(n):\n    if n == 0 or n == 1:\n        return 1\n    else:\n        return n * factorial(n-1)\n```\n\nThis function works by...",
     "status": "success"
 }
 ```
 
-### API Chat Stream
+### Streaming Chat API
 
 **Endpoint**: `POST /api/chat/stream`
 
-**Headers**: Giống như API Chat
+**Headers**: Same as Chat API
 
-**Request Body**: Giống như API Chat
+**Request Body**: Same as Chat API
 
-**Response**: Phản hồi dạng Server-Sent Events (SSE) với từng phần của câu trả lời được gửi theo thời gian thực.
+**Response**: Server-Sent Events (SSE) with portions of the response sent in real-time.
 
-## Tùy chỉnh Widget
+## Widget Customization
 
-Widget có nhiều tùy chọn để phù hợp với thiết kế trang web của bạn:
+The widget offers many customization options to match your website design:
 
-| Tham số | Mô tả | Giá trị mặc định |
-|---------|-------|-----------------|
-| `apiUrl` | URL của API endpoint | `'http://localhost:5000/api/chat/public'` |
-| `apiKey` | API key cho xác thực | `null` |
-| `position` | Vị trí của widget | `'bottom-right'` |
-| `theme` | Giao diện sáng/tối | `'dark'` |
-| `chatTitle` | Tiêu đề của cửa sổ chat | `'Code Supporter'` |
-| `initialMessage` | Tin nhắn chào mừng | `'Chào bạn! Mình có thể giúp gì...'` |
-| `maxHeight` | Chiều cao tối đa của cửa sổ chat | `'500px'` |
-| `width` | Chiều rộng của cửa sổ chat | `'350px'` |
-| `showOnInit` | Tự động hiển thị chat khi tải trang | `false` |
-| `sessionId` | ID phiên để lưu trữ hội thoại | `random ID` |
+| Parameter | Description | Default Value |
+|-----------|-------------|---------------|
+| `apiUrl` | API endpoint URL | `'http://localhost:5000/api/chat/public'` |
+| `apiKey` | API key for authentication | `null` |
+| `position` | Widget position | `'bottom-right'` |
+| `theme` | Light/dark theme | `'dark'` |
+| `chatTitle` | Chat window title | `'Code Supporter'` |
+| `initialMessage` | Welcome message | `'Hello! How can I help...'` |
+| `maxHeight` | Maximum chat window height | `'500px'` |
+| `width` | Chat window width | `'350px'` |
+| `showOnInit` | Auto-show chat on page load | `false` |
+| `sessionId` | Session ID for conversation storage | `random ID` |
 
-### Các tùy chọn nâng cao
+### Advanced Methods
 
-Bạn có thể truy cập các phương thức của widget sau khi khởi tạo:
+You can access widget methods after initialization:
 
 ```javascript
 const chatbot = window.initCodeSupporter({...});
 
-// Hiển thị cửa sổ chat theo yêu cầu
+// Show chat window on demand
 document.getElementById('help-button').addEventListener('click', function() {
     chatbot.toggleChatWindow(true);
 });
 
-// Gửi tin nhắn tự động
-chatbot.addMessage("Tôi cần hỗ trợ về vòng lặp for trong Python", "user");
+// Send a message programmatically
+chatbot.addMessage("I need help with Python for loops", "user");
 ```
 
-## Xử lý lỗi thường gặp
+## Troubleshooting
 
-### CORS (Cross-Origin Resource Sharing)
+### CORS (Cross-Origin Resource Sharing) Issues
 
-Nếu gặp lỗi CORS khi gọi API từ domain khác, hãy kiểm tra:
+If you encounter CORS errors when calling the API from a different domain, check:
 
-1. Domain của bạn đã được thêm vào danh sách cho phép CORS chưa
-2. Headers `X-API-Key` và `Content-Type` đã được cấu hình đúng chưa
+1. That your domain is added to the allowed CORS list
+2. That `X-API-Key` and `Content-Type` headers are properly configured
 
-### Kết nối API thất bại
+### API Connection Failures
 
-Nếu không thể kết nối đến API:
+If you cannot connect to the API:
 
-1. Kiểm tra API Key có hợp lệ không
-2. Đảm bảo URL API chính xác
-3. Kiểm tra console của trình duyệt để xem lỗi cụ thể
+1. Verify your API Key is valid
+2. Ensure the API URL is correct
+3. Check your browser console for specific errors
 
-## Ví dụ tích hợp
+## Integration Examples
 
-### Tích hợp vào trang web tĩnh
+### Static Website Integration
 
 ```html
 <!DOCTYPE html>
-<html lang="vi">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Trang Web Của Tôi</title>
-    <!-- Stylesheet của trang web -->
+    <title>My Programming Learning Website</title>
+    <!-- Your website styles -->
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
     <header>
-        <h1>Trang Web Học Lập Trình</h1>
-        <!-- Menu điều hướng -->
+        <h1>Programming Learning Website</h1>
+        <!-- Navigation menu -->
     </header>
     
     <main>
-        <!-- Nội dung trang web -->
+        <!-- Website content -->
     </main>
     
     <footer>
-        <!-- Footer -->
+        <!-- Footer content -->
     </footer>
     
-    <!-- Tích hợp Code Supporter -->
+    <!-- Code Supporter Integration -->
     <script src="https://your-code-supporter-domain.com/static/js/codesupporter-widget.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
@@ -198,7 +200,7 @@ Nếu không thể kết nối đến API:
                 position: 'bottom-right'
             });
             
-            // Tùy chọn: Kích hoạt chat khi người dùng nhấn nút "Trợ giúp"
+            // Optional: Activate chat when user clicks "Help" button
             document.getElementById('help-button').addEventListener('click', function() {
                 chatbot.toggleChatWindow(true);
             });
@@ -208,19 +210,19 @@ Nếu không thể kết nối đến API:
 </html>
 ```
 
-### Tích hợp vào React
+### React Integration
 
 ```jsx
 import React, { useEffect } from 'react';
 
 function App() {
     useEffect(() => {
-        // Thêm script
+        // Add script
         const script = document.createElement('script');
         script.src = 'https://your-code-supporter-domain.com/static/js/codesupporter-widget.js';
         script.async = true;
         script.onload = () => {
-            // Khởi tạo widget khi script được tải
+            // Initialize widget when script loads
             window.initCodeSupporter({
                 apiUrl: 'https://your-code-supporter-domain.com/api/chat/public',
                 apiKey: 'YOUR_API_KEY_HERE',
@@ -229,7 +231,7 @@ function App() {
         };
         document.body.appendChild(script);
         
-        // Cleanup khi component unmount
+        // Cleanup when component unmounts
         return () => {
             document.body.removeChild(script);
         };
@@ -237,7 +239,7 @@ function App() {
     
     return (
         <div className="App">
-            {/* Nội dung ứng dụng React */}
+            {/* React application content */}
         </div>
     );
 }
@@ -245,9 +247,9 @@ function App() {
 export default App;
 ```
 
-### Tích hợp vào WordPress
+### WordPress Integration
 
-Thêm đoạn mã sau vào file theme's functions.php hoặc sử dụng plugin để chèn code:
+Add the following code to your theme's functions.php file or use a plugin to insert code:
 
 ```php
 function add_code_supporter_widget() {
@@ -267,14 +269,57 @@ function add_code_supporter_widget() {
 add_action('wp_footer', 'add_code_supporter_widget');
 ```
 
-## Phiên bản API
+## User Tracking (Optional)
 
-| Phiên bản | Ngày phát hành | Thay đổi |
-|-----------|----------------|----------|
-| v1.0.0    | 01/01/2025     | Phiên bản ban đầu |
+If you want to track users interacting with the chatbot, you can add `user_id` and `user_info` parameters:
 
-## Hỗ trợ
+```javascript
+// Using widget initialization
+const chatbot = window.initCodeSupporter({
+    apiUrl: 'https://your-code-supporter-domain.com/api/chat/public',
+    apiKey: 'YOUR_API_KEY_HERE',
+    userId: 'user123', // Optional: User ID for tracking
+    userInfo: {  // Optional: Additional user information
+        name: 'John Doe',
+        email: 'john@example.com' 
+    }
+});
 
-Nếu bạn cần hỗ trợ thêm về tích hợp, vui lòng liên hệ chúng tôi tại:
-- Email: support@codesupporter.example.com
-- GitHub Issues: https://github.com/yourusername/code-supporter/issues
+// Or using direct API
+fetch('https://your-code-supporter-domain.com/api/chat/public', {
+    method: 'POST',
+    headers: {
+        'Content-Type': 'application/json',
+        'X-API-Key': 'YOUR_API_KEY_HERE'
+    },
+    body: JSON.stringify({
+        message: "How do I write a recursive function to calculate factorial in Python?",
+        user_id: "user123",  // Optional
+        user_info: {  // Optional
+            name: "John Doe",
+            email: "john@example.com"
+        }
+    })
+})
+.then(response => response.json())
+.then(data => console.log(data));
+```
+
+## API Versioning
+
+| Version | Release Date | Changes |
+|---------|--------------|---------|
+| v1.0.0  | 01/01/2025   | Initial release |
+
+## API Key vs API Secret
+
+When creating a new API key, the system provides you with:
+- **API Key**: The public identifier used in headers for API calls (`X-API-Key`)
+- **API Secret**: A secret code, similar to a password, that is only shown once
+
+For integration purposes, you only need to use the **API Key**, not the API Secret.
+
+## Support
+
+If you need additional integration support, please contact us at:
+- Email: student230212@ptnk.edu.vn

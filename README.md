@@ -1,150 +1,151 @@
 # Code Supporter
 
-Code Supporter là một chatbot thông minh hỗ trợ lập trình viên giải quyết các vấn đề trong quá trình học tập và phát triển phần mềm. Ứng dụng được xây dựng bằng Flask và cung cấp giao diện chat trực quan và API để tích hợp vào các trang web khác.
+Code Supporter is an intelligent chatbot designed to assist programmers with learning and software development challenges. Built with Flask, it offers an intuitive chat interface and API for seamless integration into various platforms.
 
-## Tính năng
+## 🚀 Features
 
-- Hệ thống xác thực người dùng với JWT
-- Giao diện chat trực quan, hỗ trợ Markdown
-- API để tích hợp chatbot vào các ứng dụng khác
-- Hệ thống quản lý API key
-- Tính năng theo dõi người dùng qua API
-- Phân tích dữ liệu sử dụng
-- Hỗ trợ cả MongoDB và lưu trữ file (tự động chuyển đổi)
-- Chế độ sáng/tối
+- **Intuitive Chat Interface**: User-friendly interface with Markdown support and syntax highlighting
+- **JWT Authentication**: Secure user authentication system
+- **LLM Integration**: Powered by Together AI's LLaMA 3.3-70B-Instruct-Turbo model
+- **REST API**: Comprehensive API with authentication for third-party integrations
+- **API Key Management**: Create, manage, and track usage of API keys
+- **User Analytics**: Track user engagement and usage patterns
+- **Flexible Storage**: Supports both MongoDB and file-based storage
+- **Light/Dark Mode**: Theme switching for better user experience
+- **Mobile Responsive**: Works on devices of all sizes
 
-## Cài đặt
+## 📋 Requirements
 
-### Yêu cầu
 - Python 3.7+
-- Pip (Trình quản lý gói Python)
-- MongoDB (tùy chọn, hệ thống có thể sử dụng lưu trữ file)
-- TogetherAI API Key
+- Pip (Python package manager)
+- MongoDB (optional, can use file storage)
+- Together AI API Key
 
-### Các bước cài đặt
+## 🔧 Installation
 
-1. Clone repository:
-```bash
-git clone https://github.com/yourusername/code-supporter.git
-cd code-supporter
-```
+1. **Clone the repository**
+   ```bash
+   git clone https://github.com/yourusername/code-supporter.git
+   cd code-supporter
+   ```
 
-2. Tạo môi trường ảo và kích hoạt:
-```bash
-python -m venv venv
-source venv/bin/activate  # Linux/Mac
-venv\Scripts\activate  # Windows
-```
+2. **Create and activate a virtual environment**
+   ```bash
+   # For Linux/Mac
+   python -m venv venv
+   source venv/bin/activate
+   
+   # For Windows
+   python -m venv venv
+   venv\Scripts\activate
+   ```
 
-3. Cài đặt các gói phụ thuộc:
-```bash
-pip install -r requirements.txt
-```
+3. **Install dependencies**
+   ```bash
+   pip install -r requirements.txt
+   ```
 
-4. Tạo file .env:
-```
-DEBUG=True
-PORT=5000
-API_SECRET_KEY=your_secret_key_here
-TOGETHER_API_KEY=your_together_api_key_here
-TOGETHER_MODEL_NAME=meta-llama/Llama-3.3-70B-Instruct-Turbo
-MONGODB_URI=mongodb://localhost:27017/code_supporter  # Tùy chọn
-```
+4. **Create a .env file in the project root**
+   ```
+   DEBUG=True
+   PORT=5000
+   API_SECRET_KEY=your_secret_key_here
+   TOGETHER_API_KEY=your_together_api_key_here
+   TOGETHER_MODEL_NAME=meta-llama/Llama-3.3-70B-Instruct-Turbo
+   MONGODB_URI=mongodb://localhost:27017/code_supporter  # Optional
+   ```
 
-5. Khởi động ứng dụng:
-```bash
-python app.py
-```
+5. **Start the application**
+   ```bash
+   python app.py
+   ```
 
-## Cấu trúc dự án
+## 🏗️ Project Structure
 
 ```
 code-supporter/
 ├── api/
 │   ├── __init__.py
-│   ├── chatbot_service.py  # Dịch vụ chatbot
-│   ├── api_service.py      # Blueprint API
-│   └── storage_service.py  # Dịch vụ lưu trữ
-├── static/                 # Tài nguyên tĩnh
+│   ├── chatbot_service.py  # LLM integration 
+│   ├── api_service.py      # API Blueprint
+│   └── storage_service.py  # Data storage service
+├── static/                 # Static assets
 │   ├── css/
 │   ├── js/
 │   └── ...
-├── templates/              # Templates HTML
+├── templates/              # HTML templates
 │   ├── login.html
 │   ├── chat.html
 │   └── admin.html
-├── data/                   # Thư mục lưu trữ dữ liệu (khi không dùng MongoDB)
-├── app.py                  # Ứng dụng chính
-├── wsgi.py                 # Entry point cho WSGI servers
-├── requirements.txt        # Các phụ thuộc
-└── README.md               # Tài liệu
+├── data/                   # Storage directory (when not using MongoDB)
+├── app.py                  # Main application
+├── wsgi.py                 # WSGI entry point
+├── cors_middleware.py      # CORS handling
+├── requirements.txt        # Dependencies
+└── README.md               # Documentation
 ```
 
-## API Endpoints
+## 🌐 API Endpoints
 
-### Xác thực và Đăng ký
-
-- `POST /api/register` - Đăng ký người dùng mới
-- `POST /api/login` - Đăng nhập
-- `GET /api/user/info` - Lấy thông tin người dùng
+### Authentication and Registration
+- `POST /api/register` - Register a new user
+- `POST /api/login` - User login
+- `GET /api/user/info` - Get user information
 
 ### Chat API
+- `POST /api/chat` - Chat API for authenticated users
+- `POST /api/chat/stream` - Streaming chat responses
+- `POST /api/chat/public` - Public chat API (requires API key)
+- `POST /api/chat/public/stream` - Public streaming chat API
 
-- `POST /api/chat` - API chat cho người dùng đã xác thực
-- `POST /api/chat/stream` - API chat với phản hồi stream
-- `POST /api/chat/public` - API chat công khai (yêu cầu API key)
-- `POST /api/chat/public/stream` - API chat công khai với phản hồi stream (yêu cầu API key)
+### API Key Management
+- `POST /api/apikey/create` - Create a new API key
+- `GET /api/apikey/list` - List API keys
+- `GET /api/apikey/analytics` - Get API key usage analytics
 
-### Quản lý API Key
+## 💾 Data Storage
 
-- `POST /api/apikey/create` - Tạo API key mới
-- `GET /api/apikey/list` - Danh sách API keys
-- `GET /api/apikey/analytics` - Phân tích sử dụng API key
+### MongoDB (Recommended)
+Code Supporter supports storing data in MongoDB. To use MongoDB:
 
-## Lưu trữ dữ liệu
+1. Install MongoDB or register for MongoDB Atlas (cloud database)
+2. Set the `MONGODB_URI` environment variable in your `.env` file
+3. Restart the application
 
-### MongoDB (Khuyến nghị)
+Collections in MongoDB:
+- `users` - User information
+- `conversations` - Chat conversation metadata
+- `conversation_messages` - Chat messages
+- `api_keys` - API key storage
+- `api_users` - API user tracking
 
-Code Supporter hỗ trợ lưu trữ dữ liệu trong MongoDB. Để sử dụng MongoDB:
+### File Storage (Fallback)
+If MongoDB is not configured, the system automatically uses file storage in the `data/` directory:
+- `data/users/` - User information
+- `data/conversations/` - Conversation history
+- `data/api_keys/` - API keys
+- `data/api_users/` - API user information
 
-1. Cài đặt MongoDB hoặc đăng ký MongoDB Atlas (cơ sở dữ liệu đám mây)
-2. Đặt biến môi trường `MONGODB_URI` trong file `.env`
-3. Khởi động lại ứng dụng
+## 🚀 Deployment
 
-Các collections trong MongoDB:
-- `users` - Lưu trữ thông tin người dùng
-- `conversations` - Lưu trữ lịch sử hội thoại
-- `api_keys` - Lưu trữ API keys
-- `api_users` - Lưu trữ thông tin người dùng qua API
+### Deploying on Render
 
-### Lưu trữ file (Fallback)
-
-Nếu không cấu hình MongoDB, hệ thống sẽ tự động chuyển sang lưu trữ file trong thư mục `data/`:
-- `data/users/` - Lưu trữ thông tin người dùng
-- `data/conversations/` - Lưu trữ lịch sử hội thoại
-- `data/api_keys/` - Lưu trữ API keys
-- `data/api_users/` - Lưu trữ thông tin người dùng qua API
-
-## Triển khai
-
-### Triển khai trên Render
-
-1. Tạo một dịch vụ Web mới trên Render
-2. Liên kết với repository GitHub của bạn
-3. Thiết lập như sau:
+1. Create a new Web Service on Render
+2. Connect to your GitHub repository
+3. Configure as follows:
    - **Environment**: Python 3
    - **Build Command**: `pip install -r requirements.txt`
    - **Start Command**: `gunicorn wsgi:app`
-4. Thêm các biến môi trường trong tab Environment
+4. Add environment variables in the Render dashboard
 
-### Sử dụng Docker
+### Using Docker
 
-1. Xây dựng image:
+1. Build the image:
 ```bash
 docker build -t code-supporter .
 ```
 
-2. Chạy container:
+2. Run the container:
 ```bash
 docker run -p 5000:5000 \
   -e API_SECRET_KEY=your_secret_key_here \
@@ -153,93 +154,49 @@ docker run -p 5000:5000 \
   code-supporter
 ```
 
-Hoặc sử dụng Docker Compose:
+Or use Docker Compose:
 ```bash
 docker-compose up -d
 ```
 
-## Tích hợp vào trang web khác
+## 🔌 Integration
 
-### Sử dụng Widget
+For detailed integration instructions, please see [INTEGRATION.md](INTEGRATION.md).
 
-1. Thêm script widget vào trang web của bạn:
+### Quick Start with Widget
+
+1. Add the widget script to your website:
 ```html
 <script src="https://your-domain.com/static/js/codesupporter-widget.js"></script>
 ```
 
-2. Khởi tạo widget với API key:
+2. Initialize the widget with your API key:
 ```html
 <script>
 const chatbot = window.initCodeSupporter({
     apiUrl: 'https://your-domain.com/api/chat/public',
-    apiKey: 'YOUR_API_KEY_HERE', // Thay thế bằng API Key của bạn
+    apiKey: 'YOUR_API_KEY_HERE',
     position: 'bottom-right',
     theme: 'dark',
     chatTitle: 'Code Supporter',
-    initialMessage: 'Xin chào! Tôi có thể giúp gì cho bạn với bài tập lập trình?',
-    userId: 'user123', // Tùy chọn: ID người dùng để theo dõi
-    userInfo: {  // Tùy chọn: Thông tin bổ sung về người dùng
-        name: 'Nguyễn Văn A',
-        email: 'nguyenvana@example.com' 
-    }
+    initialMessage: 'Hello! How can I help with your programming questions?'
 });
 </script>
 ```
 
-### Sử dụng REST API
+## 📊 Analytics and Monitoring
 
-Gọi API trực tiếp:
+Code Supporter provides an admin dashboard to monitor:
 
-```javascript
-fetch('https://your-domain.com/api/chat/public', {
-    method: 'POST',
-    headers: {
-        'Content-Type': 'application/json',
-        'X-API-Key': 'YOUR_API_KEY_HERE'
-    },
-    body: JSON.stringify({
-        message: "Làm thế nào để viết hàm đệ quy tính giai thừa trong Python?",
-        user_id: "user123",  // Tùy chọn
-        user_info: {  // Tùy chọn
-            name: "Nguyễn Văn A",
-            email: "nguyenvana@example.com"
-        }
-    })
-})
-.then(response => response.json())
-.then(data => console.log(data));
-```
+- Number of API users
+- Total API requests
+- Active users in the last 24 hours and 7 days
+- Detailed user information
 
-## Quản lý API Keys
+## 📜 License
 
-API keys được sử dụng để xác thực các yêu cầu API từ các ứng dụng bên ngoài. Để quản lý API keys:
+This project is distributed under the MIT License. See the `LICENSE` file for more details.
 
-1. Đăng nhập vào Code Supporter
-2. Chuyển đến trang Admin
-3. Tạo API key mới và cấp quyền hạn phù hợp
-4. Sử dụng API key trong header `X-API-Key` khi gọi API
+## 📞 Contact
 
-## Phân tích dữ liệu
-
-Code Supporter cung cấp trang phân tích dữ liệu trong phần Admin để theo dõi:
-
-- Số lượng người dùng qua API
-- Số lượng yêu cầu API
-- Người dùng hoạt động trong 24h và 7 ngày qua
-- Thông tin chi tiết về người dùng
-
-## Lưu ý về API Key và API Secret
-
-Khi tạo API key mới, hệ thống sẽ cung cấp cho bạn:
-- **API Key**: Sử dụng trong header `X-API-Key` khi gọi API hoặc trong khởi tạo widget
-- **API Secret**: Mã bí mật, tương tự như mật khẩu, chỉ hiển thị một lần duy nhất
-
-Trong việc tích hợp, bạn chỉ cần sử dụng **API Key**, không cần API Secret.
-
-## Giấy phép
-
-Dự án này được phân phối dưới Giấy phép MIT. Xem file `LICENSE` để biết thêm chi tiết.
-
-## Liên hệ
-
-Nếu bạn có bất kỳ câu hỏi hoặc đề xuất nào, vui lòng liên hệ [email@example.com].
+If you have any questions or suggestions, please contact [student230212@ptnk.edu.vn].
