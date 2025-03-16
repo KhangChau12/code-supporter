@@ -2,7 +2,7 @@
 API Service - Cung cấp RESTful API cho ứng dụng Code Supporter
 Cập nhật: Thêm track API users, xử lý MongoDB tốt hơn và hỗ trợ quản lý hội thoại
 """
-from flask import Blueprint, request, jsonify, Response
+from flask import Blueprint, request, jsonify, Response, make_response
 import os
 import logging
 import json
@@ -462,7 +462,10 @@ def chat_public_stream(**kwargs):
             # Gửi thông báo hoàn thành
             yield f"data: {json.dumps({'chunk': '', 'done': True})}\n\n"
         
-        return Response(generate(), mimetype='text/event-stream')
+        # Thêm CORS header cho Stream API
+        response = Response(generate(), mimetype='text/event-stream')
+        response.headers.add('Access-Control-Allow-Origin', '*')
+        return response
         
     except Exception as e:
         logger.error(f"Lỗi chat public stream: {str(e)}")
@@ -844,3 +847,28 @@ def clear_history(current_user):
             "error": str(e),
             "status": "error"
         }), 500
+    
+@api_bp.route('/chat/public', methods=['OPTIONS'])
+def options_chat_public():
+    response = make_response()
+    response.headers.add("Access-Control-Allow-Origin", "*")
+    response.headers.add("Access-Control-Allow-Headers", "Content-Type, X-API-Key, Authorization")
+    response.headers.add("Access-Control-Allow-Methods", "POST, OPTIONS")
+    return response
+
+@api_bp.route('/chat/public/stream', methods=['OPTIONS'])
+def options_chat_public_stream():
+    response = make_response()
+    response.headers.add("Access-Control-Allow-Origin", "*")
+    response.headers.add("Access-Control-Allow-Headers", "Content-Type, X-API-Key, Authorization")
+    response.headers.add("Access-Control-Allow-Methods", "POST, OPTIONS")
+    return response
+
+# Thêm xử lý CORS chung cho tất cả các API endpoints
+@api_bp.after_request
+def add_cors_headers(response):
+    if request.method != 'OPTIONS':  # Không xử lý preflight requests tại đây
+        response.headers.add('Access-Control-Allow-Origin', '*')
+        response.headers.add('Access-Control-Allow-Headers', 'Content-Type, X-API-Key, Authorization')
+        response.headers.add('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
+    return response
