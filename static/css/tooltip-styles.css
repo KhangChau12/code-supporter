@@ -1,0 +1,240 @@
+/* tooltip-styles.css - Tooltips nâng cao cho Code Supporter */
+
+/* Lớp cơ bản cho các phần tử có tooltip */
+.has-tooltip {
+    position: relative;
+    cursor: help;
+}
+
+/* Tooltip container */
+.tooltip-container {
+    position: absolute;
+    z-index: 1000;
+    visibility: hidden;
+    opacity: 0;
+    background-color: var(--card-bg);
+    color: var(--text-color);
+    padding: 10px 15px;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: normal;
+    width: max-content;
+    max-width: 250px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    transition: opacity 0.3s, visibility 0.3s, transform 0.3s;
+    border: 1px solid var(--border-color);
+    line-height: 1.5;
+    pointer-events: none;
+    transform: translateY(5px);
+}
+
+/* Mũi tên chỉ hướng */
+.tooltip-container::before {
+    content: '';
+    position: absolute;
+    width: 10px;
+    height: 10px;
+    background-color: inherit;
+    border-style: solid;
+    border-width: 1px;
+    border-color: inherit;
+    transform: rotate(45deg);
+}
+
+/* Vị trí tooltip và mũi tên */
+.tooltip-top {
+    bottom: calc(100% + 10px);
+    left: 50%;
+    transform: translateX(-50%) translateY(5px);
+}
+
+.tooltip-top::before {
+    bottom: -6px;
+    left: calc(50% - 5px);
+    border-top: none;
+    border-left: none;
+}
+
+.tooltip-bottom {
+    top: calc(100% + 10px);
+    left: 50%;
+    transform: translateX(-50%) translateY(-5px);
+}
+
+.tooltip-bottom::before {
+    top: -6px;
+    left: calc(50% - 5px);
+    border-bottom: none;
+    border-right: none;
+}
+
+.tooltip-left {
+    right: calc(100% + 10px);
+    top: 50%;
+    transform: translateY(-50%) translateX(5px);
+}
+
+.tooltip-left::before {
+    right: -6px;
+    top: calc(50% - 5px);
+    border-top: none;
+    border-right: none;
+}
+
+.tooltip-right {
+    left: calc(100% + 10px);
+    top: 50%;
+    transform: translateY(-50%) translateX(-5px);
+}
+
+.tooltip-right::before {
+    left: -6px;
+    top: calc(50% - 5px);
+    border-bottom: none;
+    border-left: none;
+}
+
+/* Hiển thị tooltip khi hover */
+.has-tooltip:hover .tooltip-container {
+    visibility: visible;
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+}
+
+.has-tooltip:hover .tooltip-left {
+    transform: translateY(-50%) translateX(0);
+}
+
+.has-tooltip:hover .tooltip-right {
+    transform: translateY(-50%) translateX(0);
+}
+
+.has-tooltip:hover .tooltip-top {
+    transform: translateX(-50%) translateY(0);
+}
+
+.has-tooltip:hover .tooltip-bottom {
+    transform: translateX(-50%) translateY(0);
+}
+
+/* Tooltip với tiêu đề */
+.tooltip-title {
+    font-weight: 600;
+    font-size: 15px;
+    margin-bottom: 5px;
+    display: block;
+    color: var(--primary-color);
+}
+
+/* Hiệu ứng độ trễ cho tooltip */
+.tooltip-delay-short {
+    transition-delay: 0.3s;
+}
+
+.tooltip-delay-medium {
+    transition-delay: 0.6s;
+}
+
+.tooltip-delay-long {
+    transition-delay: 1s;
+}
+
+/* Thêm tooltips mới khi người dùng mới */
+.new-user-tooltip {
+    position: relative;
+}
+
+.new-user-tooltip::after {
+    content: 'Mới!';
+    position: absolute;
+    top: -8px;
+    right: -8px;
+    background-color: var(--primary-color);
+    color: white;
+    font-size: 10px;
+    font-weight: bold;
+    padding: 2px 6px;
+    border-radius: 10px;
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0% {
+        transform: scale(1);
+        opacity: 1;
+    }
+    50% {
+        transform: scale(1.1);
+        opacity: 0.8;
+    }
+    100% {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+/* Tooltips nổi bật cho tính năng quan trọng */
+.feature-tooltip {
+    border-left: 3px solid var(--primary-color);
+    background-color: rgba(99, 102, 241, 0.05);
+    padding: 8px 12px;
+}
+
+/* Tooltips phong cách hướng dẫn */
+.tutorial-tooltip {
+    background: linear-gradient(135deg, var(--gradient-start), var(--gradient-end));
+    color: white;
+    border: none;
+    padding: 12px 16px;
+}
+
+.tutorial-tooltip::before {
+    background: linear-gradient(135deg, var(--gradient-start), var(--gradient-end));
+    border: none;
+}
+
+/* Chỉ báo có trợ giúp nhanh */
+.has-help {
+    position: relative;
+}
+
+.has-help::after {
+    content: '?';
+    font-size: 12px;
+    font-weight: bold;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background-color: var(--primary-color);
+    color: white;
+    position: absolute;
+    top: -8px;
+    right: -8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0.9;
+}
+
+/* Tooltip cho tính năng mới ra mắt */
+.new-feature-tooltip {
+    border: 1px dashed var(--primary-color);
+}
+
+.new-feature-banner {
+    position: relative;
+    overflow: hidden;
+}
+
+.new-feature-banner::before {
+    content: 'Tính năng mới';
+    position: absolute;
+    top: 8px;
+    right: -30px;
+    background-color: var(--primary-color);
+    color: white;
+    padding: 3px 30px;
+    font-size: 10px;
+    transform: rotate(45deg);
+    z-index: 1;
+}

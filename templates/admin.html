@@ -8,6 +8,10 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style2.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">
+    
+    <!-- Thêm stylesheet cho tour guide và tooltips -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/shepherd.js/11.0.0/css/shepherd.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/tooltip-styles.css') }}">
 </head>
 <body>
     <div class="app-container">
@@ -16,24 +20,22 @@
                 <h1>Code Supporter</h1>
             </div>
             <div class="user-info">
-                <span id="username-display">{{ username }}</span>
+                <span id="username-display" data-tooltip="Tài khoản của bạn" data-tooltip-position="bottom">{{ username }}</span>
                 
-                <div class="nav-buttons">
-                    <!-- Nút Chat -->
-                    <a href="/chat" class="nav-link" title="Chat">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
-                        </svg>
-                        <span class="nav-text">Chat</span>
-                    </a>
-                </div>
+                <!-- Nút Chat -->
+                <a href="/chat" class="nav-link" title="Chat" data-tooltip="Quay lại trang chat" data-tooltip-position="bottom">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+                    </svg>
+                    <span class="nav-text">Chat</span>
+                </a>
                 
-                <button id="theme-toggle" aria-label="Toggle theme">
+                <button id="theme-toggle" aria-label="Toggle theme" data-tooltip="Chuyển đổi chế độ sáng/tối" data-tooltip-position="bottom">
                     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
                     </svg>
                 </button>
-                <button id="logout-button" aria-label="Log out">
+                <button id="logout-button" aria-label="Log out" data-tooltip="Đăng xuất" data-tooltip-position="bottom">
                     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
                         <polyline points="16 17 21 12 16 7"></polyline>
@@ -45,9 +47,9 @@
         
         <main class="admin-container">
             <div class="admin-tabs">
-                <div class="admin-tab active" data-target="api-keys-tab">API Keys</div>
-                <div class="admin-tab" data-target="integration-tab">Tích hợp</div>
-                <div class="admin-tab" data-target="analytics-tab">Phân tích</div>
+                <div class="admin-tab active" data-target="api-keys-tab" data-tooltip="Quản lý các API key" data-tooltip-position="bottom">API Keys</div>
+                <div class="admin-tab" data-target="integration-tab" data-tooltip="Hướng dẫn tích hợp" data-tooltip-position="bottom">Tích hợp</div>
+                <div class="admin-tab" data-target="analytics-tab" data-tooltip="Phân tích dữ liệu" data-tooltip-position="bottom">Phân tích</div>
             </div>
             
             <div id="api-keys-tab" class="admin-tab-content active">
@@ -58,23 +60,23 @@
                     <div class="api-key-form">
                         <h3>Tạo API Key mới</h3>
                         <div class="form-group">
-                            <label for="api-key-name">Tên API Key</label>
+                            <label for="api-key-name" data-tooltip="Đặt tên mô tả cho API key" data-tooltip-position="right">Tên API Key</label>
                             <input type="text" id="api-key-name" placeholder="Nhập tên để nhận diện API key này">
                         </div>
                         <div class="form-group">
-                            <label>Quyền hạn</label>
+                            <label data-tooltip="Chọn các chức năng API được phép sử dụng" data-tooltip-position="right">Quyền hạn</label>
                             <div class="checkbox-group">
                                 <label class="checkbox">
-                                    <input type="checkbox" id="permission-chat" checked>
+                                    <input type="checkbox" id="permission-chat" checked data-tooltip="Cho phép gọi API chat thông thường" data-tooltip-position="top">
                                     <span>Chat API</span>
                                 </label>
                                 <label class="checkbox">
-                                    <input type="checkbox" id="permission-stream">
+                                    <input type="checkbox" id="permission-stream" data-tooltip="Cho phép gọi API chat kiểu stream" data-tooltip-position="top">
                                     <span>Stream API</span>
                                 </label>
                             </div>
                         </div>
-                        <button id="create-api-key" class="primary-button">Tạo API Key</button>
+                        <button id="create-api-key" class="primary-button" data-tooltip="Tạo một API key mới với các quyền đã chọn" data-tooltip-position="top">Tạo API Key</button>
                     </div>
                     
                     <div class="api-key-result" id="api-key-result" style="display:none;">
@@ -99,7 +101,7 @@
                             <div class="key-field">
                                 <label>API Key:</label>
                                 <div class="key-value" id="api-key-value"></div>
-                                <button class="copy-button" data-target="api-key-value">
+                                <button class="copy-button" data-target="api-key-value" data-tooltip="Sao chép API Key" data-tooltip-position="left">
                                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                         <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
                                         <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
@@ -109,7 +111,7 @@
                             <div class="key-field">
                                 <label>API Secret:</label>
                                 <div class="key-value" id="api-secret-value"></div>
-                                <button class="copy-button" data-target="api-secret-value">
+                                <button class="copy-button" data-target="api-secret-value" data-tooltip="Sao chép API Secret" data-tooltip-position="left">
                                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                         <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
                                         <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
@@ -364,6 +366,12 @@ fetch('{{ request.url_root }}api/chat/public', {
         </main>
     </div>
     
+    <!-- Thêm script cho tour guide và tooltips -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/shepherd.js/11.0.0/shepherd.min.js"></script>
+    <script src="{{ url_for('static', filename='js/tooltip-utility.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/onboarding-tour.js') }}"></script>
+    
+    <!-- Script chính cho Admin -->
     <script src="{{ url_for('static', filename='js/admin.js') }}"></script>
 </body>
 </html>
