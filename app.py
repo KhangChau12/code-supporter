@@ -28,7 +28,8 @@ load_dotenv()
 app = Flask(__name__, 
            template_folder='templates',
            static_folder='static')
-CORS(app, supports_credentials=True)
+CORS(app, supports_credentials=True, origins="*", allow_headers=["Content-Type", "X-API-Key", "Authorization"], 
+     methods=["GET", "POST", "OPTIONS"])
 
 # Secret key cho JWT
 SECRET_KEY = os.getenv('API_SECRET_KEY', 'default_secret_key')
