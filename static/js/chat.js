@@ -218,16 +218,7 @@ document.addEventListener('DOMContentLoaded', function() {
             
             // Nếu có hội thoại, tải hội thoại đầu tiên
             if (conversations.length > 0) {
-                // Thêm kiểm tra để đảm bảo id đầu tiên hợp lệ
-                const firstConversation = conversations[0];
-                const firstId = firstConversation.id;
-                
-                if (firstId && firstId !== "null" && !firstId.includes("null") && firstId !== "undefined") {
-                    loadConversation(firstId);
-                } else {
-                    // Nếu không có ID hợp lệ, tạo hội thoại mới
-                    createNewConversation();
-                }
+                loadConversation(conversations[0].id);
             } else {
                 // Nếu không có hội thoại nào, hiển thị trang trống
                 renderEmptyState();
@@ -340,13 +331,8 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Tải nội dung của một hội thoại
     function loadConversation(conversationId) {
-        // Kiểm tra id hợp lệ trước khi tiếp tục
-        if (!conversationId || conversationId === "null" || conversationId.includes("null") || conversationId === "undefined") {
-            console.error("Đang cố tải hội thoại với ID không hợp lệ:", conversationId);
-            createNewConversation(); // Tạo hội thoại mới thay vì tải hội thoại không hợp lệ
-            return;
-        }
-    
+        if (!conversationId) return;
+
         // Cập nhật UI để hiển thị hội thoại đã chọn
         updateActiveConversation(conversationId);
         
@@ -786,10 +772,8 @@ document.addEventListener('DOMContentLoaded', function() {
                                 // Thêm chunk vào pending để xử lý trong interval
                                 pendingChunks.push(data.chunk);
                             } else if (data.conversation_id) {
-                                // Chỉ cập nhật nếu conversation_id có giá trị hợp lệ
-                                if (!currentConversationId && data.conversation_id && 
-                                    data.conversation_id !== "null" && 
-                                    !data.conversation_id.includes("null")) {
+                                // Nếu nhận được conversation_id mới, cập nhật
+                                if (!currentConversationId) {
                                     currentConversationId = data.conversation_id;
                                 }
                             }
@@ -1114,31 +1098,6 @@ document.addEventListener('DOMContentLoaded', function() {
         setTimeout(() => {
             messageInput.focus();
         }, 100);
-    }
-
-    // Thêm hàm kiểm tra URL hợp lệ trước khi gửi fetch request
-    function checkAndFixUrl(url) {
-        // Kiểm tra xem URL có chứa '/null' hoặc '/undefined' không
-        if (url.includes('/null') || url.includes('/undefined')) {
-            console.error('Phát hiện URL không hợp lệ:', url);
-            return false;
-        }
-        return true;
-    }
-
-    // Sửa phần fetch trong hàm loadConversation
-    if (checkAndFixUrl(`/api/conversations/${conversationId}`)) {
-        fetch(`/api/conversations/${conversationId}`, {
-            method: 'GET',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${getToken()}`
-            }
-        })
-        .then(/*...*/)
-    } else {
-        // Nếu URL không hợp lệ, tạo hội thoại mới
-        createNewConversation();
     }
 });
 
