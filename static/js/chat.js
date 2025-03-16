@@ -218,7 +218,16 @@ document.addEventListener('DOMContentLoaded', function() {
             
             // Nếu có hội thoại, tải hội thoại đầu tiên
             if (conversations.length > 0) {
-                loadConversation(conversations[0].id);
+                // Thêm kiểm tra để đảm bảo id đầu tiên hợp lệ
+                const firstConversation = conversations[0];
+                const firstId = firstConversation.id;
+                
+                if (firstId && firstId !== "null" && !firstId.includes("null") && firstId !== "undefined") {
+                    loadConversation(firstId);
+                } else {
+                    // Nếu không có ID hợp lệ, tạo hội thoại mới
+                    createNewConversation();
+                }
             } else {
                 // Nếu không có hội thoại nào, hiển thị trang trống
                 renderEmptyState();
@@ -331,8 +340,13 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Tải nội dung của một hội thoại
     function loadConversation(conversationId) {
-        if (!conversationId) return;
-        
+        // Kiểm tra id hợp lệ trước khi tiếp tục
+        if (!conversationId || conversationId === "null" || conversationId.includes("null") || conversationId === "undefined") {
+            console.error("Đang cố tải hội thoại với ID không hợp lệ:", conversationId);
+            createNewConversation(); // Tạo hội thoại mới thay vì tải hội thoại không hợp lệ
+            return;
+        }
+    
         // Cập nhật UI để hiển thị hội thoại đã chọn
         updateActiveConversation(conversationId);
         
@@ -772,8 +786,10 @@ document.addEventListener('DOMContentLoaded', function() {
                                 // Thêm chunk vào pending để xử lý trong interval
                                 pendingChunks.push(data.chunk);
                             } else if (data.conversation_id) {
-                                // Nếu nhận được conversation_id mới, cập nhật
-                                if (!currentConversationId) {
+                                // Chỉ cập nhật nếu conversation_id có giá trị hợp lệ
+                                if (!currentConversationId && data.conversation_id && 
+                                    data.conversation_id !== "null" && 
+                                    !data.conversation_id.includes("null")) {
                                     currentConversationId = data.conversation_id;
                                 }
                             }
@@ -1069,24 +1085,27 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Khởi tạo syntax highlighting
     function initCodeHighlighting() {
-        // Nếu chưa có Prism.js, load từ CDN
+        // Kiểm tra xem Prism đã được tải chưa
         if (!window.Prism && typeof document !== 'undefined') {
+            // Tải thư viện chính trước
+            const prismScript = document.createElement('script');
+            prismScript.src = 'https://cdnjs.cloudflare.com/ajax/libs/prism/1.24.1/prism.min.js';
+            prismScript.onload = function() {
+                // Sau khi thư viện chính tải xong, mới tải các ngôn ngữ
+                const languages = ['javascript', 'python', 'java', 'php', 'csharp', 'cpp', 'ruby', 'bash', 'sql', 'html', 'css'];
+                languages.forEach(lang => {
+                    const langScript = document.createElement('script');
+                    langScript.src = `https://cdnjs.cloudflare.com/ajax/libs/prism/1.24.1/components/prism-${lang}.min.js`;
+                    document.head.appendChild(langScript);
+                });
+            };
+            document.head.appendChild(prismScript);
+            
+            // Thêm CSS
             const prismCSS = document.createElement('link');
             prismCSS.rel = 'stylesheet';
             prismCSS.href = 'https://cdnjs.cloudflare.com/ajax/libs/prism/1.24.1/themes/prism-tomorrow.min.css';
             document.head.appendChild(prismCSS);
-            
-            const prismScript = document.createElement('script');
-            prismScript.src = 'https://cdnjs.cloudflare.com/ajax/libs/prism/1.24.1/prism.min.js';
-            document.head.appendChild(prismScript);
-            
-            // Load thêm các ngôn ngữ phổ biến
-            const languages = ['javascript', 'python', 'java', 'php', 'csharp', 'cpp', 'ruby', 'bash', 'sql', 'html', 'css'];
-            languages.forEach(lang => {
-                const langScript = document.createElement('script');
-                langScript.src = `https://cdnjs.cloudflare.com/ajax/libs/prism/1.24.1/components/prism-${lang}.min.js`;
-                document.head.appendChild(langScript);
-            });
         }
     }
     
@@ -1096,4 +1115,30 @@ document.addEventListener('DOMContentLoaded', function() {
             messageInput.focus();
         }, 100);
     }
+
+    // Thêm hàm kiểm tra URL hợp lệ trước khi gửi fetch request
+    function checkAndFixUrl(url) {
+        // Kiểm tra xem URL có chứa '/null' hoặc '/undefined' không
+        if (url.includes('/null') || url.includes('/undefined')) {
+            console.error('Phát hiện URL không hợp lệ:', url);
+            return false;
+        }
+        return true;
+    }
+
+    // Sửa phần fetch trong hàm loadConversation
+    if (checkAndFixUrl(`/api/conversations/${conversationId}`)) {
+        fetch(`/api/conversations/${conversationId}`, {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${getToken()}`
+            }
+        })
+        .then(/*...*/)
+    } else {
+        // Nếu URL không hợp lệ, tạo hội thoại mới
+        createNewConversation();
+    }
 });
+
