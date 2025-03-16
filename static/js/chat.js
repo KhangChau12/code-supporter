@@ -186,6 +186,18 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     // ===== Các hàm xử lý hội thoại =====
+    // Kiểm tra ID hợp lệ
+    function isValidId(id) {
+        if (!id || typeof id !== 'string') return false;
+        
+        // Kiểm tra ObjectId (24 ký tự hex)
+        if (/^[0-9a-fA-F]{24}$/.test(id)) return true;
+        
+        // Kiểm tra UUID
+        const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+        return uuidRegex.test(id);
+    }
+    
     // Tải danh sách hội thoại
     function loadConversations() {
         // Hiển thị loading state
@@ -217,7 +229,7 @@ document.addEventListener('DOMContentLoaded', function() {
             renderConversationList();
             
             // Nếu có hội thoại, tải hội thoại đầu tiên
-            if (conversations.length > 0) {
+            if (conversations.length > 0 && conversations[0].id) {
                 loadConversation(conversations[0].id);
             } else {
                 // Nếu không có hội thoại nào, hiển thị trang trống
@@ -269,6 +281,11 @@ document.addEventListener('DOMContentLoaded', function() {
         // Tạo HTML cho từng hội thoại
         let html = '';
         sortedConversations.forEach(conversation => {
+            if (!conversation.id) {
+                console.warn('Hội thoại không có ID:', conversation);
+                return; // Bỏ qua hội thoại không có ID
+            }
+            
             const isActive = conversation.id === currentConversationId;
             const title = conversation.title || 'Hội thoại không có tiêu đề';
             const hasPreview = conversation.preview && conversation.preview.trim() !== '';
@@ -331,8 +348,14 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Tải nội dung của một hội thoại
     function loadConversation(conversationId) {
-        if (!conversationId) return;
-
+        // Kiểm tra tính hợp lệ của conversation_id
+        if (!conversationId || !isValidId(conversationId)) {
+            console.error("ID hội thoại không hợp lệ:", conversationId);
+            showToast("ID hội thoại không hợp lệ", "error");
+            renderEmptyState();
+            return;
+        }
+    
         // Cập nhật UI để hiển thị hội thoại đã chọn
         updateActiveConversation(conversationId);
         
@@ -476,7 +499,10 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Đổi tên hội thoại
     function renameConversation(conversationId, newTitle) {
-        if (!conversationId || !newTitle) return;
+        if (!conversationId || !newTitle || !isValidId(conversationId)) {
+            console.error("ID hội thoại không hợp lệ hoặc tiêu đề trống:", conversationId);
+            return showToast("Không thể đổi tên hội thoại", "error");
+        }
         
         // Gọi API để đổi tên hội thoại
         fetch(`/api/conversations/${conversationId}`, {
@@ -517,7 +543,10 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Xóa một hội thoại
     function deleteConversation(conversationId) {
-        if (!conversationId) return;
+        if (!conversationId || !isValidId(conversationId)) {
+            console.error("ID hội thoại không hợp lệ:", conversationId);
+            return showToast("Không thể xóa hội thoại", "error");
+        }
         
         // Gọi API để xóa hội thoại
         fetch(`/api/conversations/${conversationId}`, {
@@ -542,7 +571,7 @@ document.addEventListener('DOMContentLoaded', function() {
             
             // Nếu xóa hội thoại hiện tại, chuyển sang hội thoại khác hoặc tạo mới
             if (currentConversationId === conversationId) {
-                if (conversations.length > 0) {
+                if (conversations.length > 0 && conversations[0].id) {
                     loadConversation(conversations[0].id);
                 } else {
                     renderEmptyState();
@@ -619,12 +648,12 @@ document.addEventListener('DOMContentLoaded', function() {
         let apiURL = '/api/chat/stream';
         let apiMethod = 'POST';
         let apiBody = { message };
-
+    
         // Nếu đang trong một hội thoại cụ thể, thêm conversation_id
-        if (currentConversationId) {  // Thêm kiểm tra null/undefined
+        if (currentConversationId && isValidId(currentConversationId)) {  
             apiBody.conversation_id = currentConversationId;
         }
-
+    
         // Sử dụng fetch để kết nối tới API stream
         streamChatResponse(message, typingIndicator, apiURL, apiMethod, apiBody);
     }
@@ -773,7 +802,7 @@ document.addEventListener('DOMContentLoaded', function() {
                                 pendingChunks.push(data.chunk);
                             } else if (data.conversation_id) {
                                 // Nếu nhận được conversation_id mới, cập nhật
-                                if (!currentConversationId) {
+                                if (!currentConversationId || !isValidId(currentConversationId)) {
                                     currentConversationId = data.conversation_id;
                                 }
                             }
@@ -1100,4 +1129,3 @@ document.addEventListener('DOMContentLoaded', function() {
         }, 100);
     }
 });
-

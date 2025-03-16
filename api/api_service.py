@@ -1,6 +1,6 @@
 """
 API Service - Cung cấp RESTful API cho ứng dụng Code Supporter
-Cập nhật: Thêm track API users, xử lý MongoDB tốt hơn và hỗ trợ quản lý hội thoại
+Cập nhật: Sửa xử lý ID để thống nhất giữa MongoDB và lưu trữ file
 """
 from flask import Blueprint, request, jsonify, Response, make_response
 import os
@@ -12,6 +12,7 @@ from functools import wraps
 from dotenv import load_dotenv
 from typing import Dict, List, Optional, Any, Union, Tuple
 import uuid
+import re
 
 from .chatbot_service import CodeSupporterService
 from .storage_service import StorageService
@@ -35,6 +36,25 @@ SECRET_KEY = os.getenv('API_SECRET_KEY', 'default_secret_key')
 # Khởi tạo các dịch vụ
 chatbot_service = CodeSupporterService()
 storage_service = StorageService()
+
+# --- Utility functions ---
+def is_valid_id(id_str):
+    """Kiểm tra xem id có hợp lệ không (ObjectId hoặc UUID)"""
+    if not id_str or not isinstance(id_str, str):
+        return False
+    
+    # Kiểm tra ObjectId (24 ký tự hex)
+    if re.match(r'^[0-9a-fA-F]{24}$', id_str):
+        return True
+    
+    # Kiểm tra UUID
+    try:
+        uuid.UUID(id_str)
+        return True
+    except ValueError:
+        return False
+    
+    return False
 
 # --- Decorator xác thực ---
 
@@ -114,28 +134,10 @@ def get_conversations(current_user):
         # Lấy danh sách hội thoại từ storage service
         conversations = storage_service.get_conversations(current_user, limit=limit, offset=offset)
         
-        # Chuẩn bị dữ liệu phản hồi
-        conversations_data = []
-        for conv in conversations:
-            # Lấy một vài tin nhắn gần nhất để tạo preview
-            preview = ""
-            if conv.get("last_message"):
-                preview = conv["last_message"].get("content", "")[:100]  # Giới hạn 100 ký tự cho preview
-            
-            # Định dạng dữ liệu hội thoại
-            conversation_data = {
-                "id": conv.get("id"),
-                "title": conv.get("title") or "Hội thoại không có tiêu đề",
-                "created_at": conv.get("created_at"),
-                "updated_at": conv.get("updated_at"),
-                "message_count": conv.get("message_count", 0),
-                "preview": preview
-            }
-            conversations_data.append(conversation_data)
-        
+        # Trả về danh sách
         return jsonify({
-            "conversations": conversations_data,
-            "count": len(conversations_data),
+            "conversations": conversations,
+            "count": len(conversations),
             "total": storage_service.get_conversations_count(current_user)
         })
         
@@ -152,16 +154,19 @@ def get_conversation(current_user, conversation_id):
     """Lấy chi tiết một hội thoại cụ thể"""
     try:
         # Kiểm tra tính hợp lệ của conversation_id
-        if not conversation_id:
-            return jsonify({"error": "ID hội thoại không được để trống"}), 400
+        if not conversation_id or not is_valid_id(conversation_id):
+            logger.warning(f"ID hội thoại không hợp lệ: {conversation_id}")
+            return jsonify({"error": "ID hội thoại không hợp lệ"}), 400
             
         # Kiểm tra quyền truy cập hội thoại
         if not storage_service.check_conversation_access(current_user, conversation_id):
+            logger.warning(f"Người dùng {current_user} không có quyền truy cập hội thoại {conversation_id}")
             return jsonify({"error": "Bạn không có quyền truy cập hội thoại này"}), 403
         
         # Lấy thông tin hội thoại
         conversation = storage_service.get_conversation(conversation_id)
         if not conversation:
+            logger.warning(f"Không tìm thấy hội thoại với ID: {conversation_id}")
             return jsonify({"error": "Không tìm thấy hội thoại"}), 404
         
         # Lấy tin nhắn của hội thoại
@@ -176,20 +181,9 @@ def get_conversation(current_user, conversation_id):
             "message_count": len(messages)
         }
         
-        # Định dạng tin nhắn
-        messages_data = []
-        for message in messages:
-            message_data = {
-                "id": message.get("id"),
-                "role": message.get("role"),
-                "content": message.get("content"),
-                "timestamp": message.get("timestamp")
-            }
-            messages_data.append(message_data)
-        
         return jsonify({
             "conversation": conversation_data,
-            "messages": messages_data
+            "messages": messages
         })
         
     except Exception as e:
@@ -204,6 +198,11 @@ def get_conversation(current_user, conversation_id):
 def update_conversation(current_user, conversation_id):
     """Cập nhật thông tin hội thoại"""
     try:
+        # Kiểm tra tính hợp lệ của conversation_id
+        if not conversation_id or not is_valid_id(conversation_id):
+            logger.warning(f"ID hội thoại không hợp lệ: {conversation_id}")
+            return jsonify({"error": "ID hội thoại không hợp lệ"}), 400
+            
         # Kiểm tra quyền truy cập hội thoại
         if not storage_service.check_conversation_access(current_user, conversation_id):
             return jsonify({"error": "Bạn không có quyền truy cập hội thoại này"}), 403
@@ -242,6 +241,11 @@ def update_conversation(current_user, conversation_id):
 def delete_conversation(current_user, conversation_id):
     """Xóa một hội thoại"""
     try:
+        # Kiểm tra tính hợp lệ của conversation_id
+        if not conversation_id or not is_valid_id(conversation_id):
+            logger.warning(f"ID hội thoại không hợp lệ: {conversation_id}")
+            return jsonify({"error": "ID hội thoại không hợp lệ"}), 400
+            
         # Kiểm tra quyền truy cập hội thoại
         if not storage_service.check_conversation_access(current_user, conversation_id):
             return jsonify({"error": "Bạn không có quyền truy cập hội thoại này"}), 403
@@ -301,6 +305,11 @@ def chat_authenticated(current_user):
         if not user_message:
             return jsonify({"error": "Tin nhắn không được để trống"}), 400
         
+        # Kiểm tra tính hợp lệ của conversation_id nếu có
+        if conversation_id and not is_valid_id(conversation_id):
+            logger.warning(f"ID hội thoại không hợp lệ: {conversation_id}")
+            return jsonify({"error": "ID hội thoại không hợp lệ"}), 400
+            
         # Kiểm tra quyền truy cập hội thoại nếu có conversation_id
         if conversation_id and not storage_service.check_conversation_access(current_user, conversation_id):
             return jsonify({"error": "Bạn không có quyền truy cập hội thoại này"}), 403
@@ -315,15 +324,23 @@ def chat_authenticated(current_user):
             # Tạo hội thoại mới nếu không có conversation_id
             conversation_title = "Hội thoại " + datetime.now().strftime("%d/%m/%Y %H:%M")
             conversation_id = storage_service.create_conversation(current_user, title=conversation_title)
+            
+            # Kiểm tra nếu không tạo được hội thoại mới
+            if not conversation_id:
+                logger.error(f"Không thể tạo hội thoại mới cho người dùng {current_user}")
+                return jsonify({"error": "Không thể tạo hội thoại mới"}), 500
         
         # Lưu tin nhắn người dùng vào hội thoại
-        storage_service.add_message_to_conversation(conversation_id, "user", user_message)
+        if not storage_service.add_message_to_conversation(conversation_id, "user", user_message):
+            logger.error(f"Không thể thêm tin nhắn người dùng vào hội thoại {conversation_id}")
+            return jsonify({"error": "Không thể lưu tin nhắn"}), 500
         
         # Gọi service để tạo phản hồi
         bot_reply = chatbot_service.generate_response(user_message, conversation_history)
         
         # Lưu phản hồi vào hội thoại
-        storage_service.add_message_to_conversation(conversation_id, "assistant", bot_reply)
+        if not storage_service.add_message_to_conversation(conversation_id, "assistant", bot_reply):
+            logger.error(f"Không thể lưu phản hồi vào hội thoại {conversation_id}")
         
         return jsonify({
             "reply": bot_reply,
@@ -350,6 +367,11 @@ def chat_stream(current_user):
         if not user_message:
             return jsonify({"error": "Tin nhắn không được để trống"}), 400
         
+        # Kiểm tra tính hợp lệ của conversation_id nếu có
+        if conversation_id and not is_valid_id(conversation_id):
+            logger.warning(f"ID hội thoại không hợp lệ trong stream API: {conversation_id}")
+            return jsonify({"error": "ID hội thoại không hợp lệ"}), 400
+            
         # Kiểm tra quyền truy cập hội thoại nếu có conversation_id
         if conversation_id and not storage_service.check_conversation_access(current_user, conversation_id):
             return jsonify({"error": "Bạn không có quyền truy cập hội thoại này"}), 403
@@ -364,9 +386,16 @@ def chat_stream(current_user):
             # Tạo hội thoại mới nếu không có conversation_id
             conversation_title = "Hội thoại " + datetime.now().strftime("%d/%m/%Y %H:%M")
             conversation_id = storage_service.create_conversation(current_user, title=conversation_title)
+            
+            # Kiểm tra nếu không tạo được hội thoại mới
+            if not conversation_id:
+                logger.error(f"Không thể tạo hội thoại mới cho người dùng {current_user} trong stream API")
+                return jsonify({"error": "Không thể tạo hội thoại mới"}), 500
         
         # Lưu tin nhắn người dùng vào hội thoại
-        storage_service.add_message_to_conversation(conversation_id, "user", user_message)
+        if not storage_service.add_message_to_conversation(conversation_id, "user", user_message):
+            logger.error(f"Không thể thêm tin nhắn người dùng vào hội thoại {conversation_id} trong stream API")
+            return jsonify({"error": "Không thể lưu tin nhắn"}), 500
         
         def generate():
             full_response = ""

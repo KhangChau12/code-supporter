@@ -100,6 +100,10 @@ class StorageService:
         result = {}
         for key, value in doc.items():
             if key == '_id' and isinstance(value, ObjectId):
+                result['id'] = str(value)  # Thống nhất dùng 'id' thay vì '_id'
+            elif key == 'conversation_id' and isinstance(value, ObjectId):
+                result['conversation_id'] = str(value)
+            elif isinstance(value, ObjectId):
                 result[key] = str(value)
             elif isinstance(value, dict):
                 result[key] = self._sanitize_mongodb_doc(value)
@@ -131,10 +135,17 @@ class StorageService:
             
             # Index cho conversations collection
             try:
-                self.db.conversations.create_index([("username", 1), ("timestamp", -1)])
+                self.db.conversations.create_index([("username", 1), ("updated_at", -1)])
                 logger.info("Đã tạo index cho conversations collection")
             except Exception as e:
                 logger.error(f"Lỗi khi tạo index cho conversations collection: {str(e)}")
+            
+            # Index cho conversation_messages collection
+            try:
+                self.db.conversation_messages.create_index("conversation_id")
+                logger.info("Đã tạo index cho conversation_messages collection")
+            except Exception as e:
+                logger.error(f"Lỗi khi tạo index cho conversation_messages collection: {str(e)}")
             
             # Index cho api_keys collection
             try:
@@ -155,6 +166,12 @@ class StorageService:
             logger.info("Quá trình thiết lập MongoDB indexes đã hoàn tất")
         except Exception as e:
             logger.error(f"Lỗi khi thiết lập MongoDB indexes: {str(e)}")
+    
+    def _is_valid_object_id(self, id_str: str) -> bool:
+        """Kiểm tra xem chuỗi có phải là ObjectId hợp lệ không"""
+        if not id_str or not isinstance(id_str, str):
+            return False
+        return bool(re.match(r'^[0-9a-fA-F]{24}$', id_str))
     
     def authenticate_user(self, username: str, password: str) -> bool:
         """Xác thực người dùng"""
@@ -1188,6 +1205,9 @@ class StorageService:
                 # Chuẩn bị dữ liệu phản hồi
                 result = []
                 for conv in conversations:
+                    # Chuyển đổi ObjectId thành string và đổi tên trường _id thành id
+                    conv_data = self._sanitize_mongodb_doc(conv)
+                    
                     # Lấy tin nhắn cuối cùng để tạo preview
                     last_message = None
                     last_messages = list(self.db.conversation_messages.find(
@@ -1202,12 +1222,13 @@ class StorageService:
                         {"conversation_id": conv["_id"]}
                     )
                     
-                    # Định dạng dữ liệu hội thoại
-                    conversation_data = self._sanitize_mongodb_doc(conv)
-                    conversation_data["message_count"] = message_count
-                    conversation_data["last_message"] = last_message
+                    # Thêm thông tin bổ sung
+                    conv_data["message_count"] = message_count
+                    if last_message:
+                        conv_data["last_message"] = last_message
+                        conv_data["preview"] = last_message.get("content", "")[:100]  # Tạo preview
                     
-                    result.append(conversation_data)
+                    result.append(conv_data)
                 
                 return result
             else:
@@ -1221,6 +1242,7 @@ class StorageService:
                 # Lấy danh sách file hội thoại metadata
                 meta_dir = os.path.join(user_dir, "metadata")
                 if not os.path.exists(meta_dir):
+                    os.makedirs(meta_dir, exist_ok=True)
                     return []
                 
                 meta_files = [f for f in os.listdir(meta_dir) if f.endswith('.json')]
@@ -1237,6 +1259,10 @@ class StorageService:
                         if conversation.get("deleted", False):
                             continue
                         
+                        # Đảm bảo có trường id
+                        if "_id" in conversation and "id" not in conversation:
+                            conversation["id"] = conversation["_id"]
+                        
                         # Lấy tin nhắn cuối cùng
                         conversation_id = conversation["id"]
                         messages_file = os.path.join(user_dir, f"{conversation_id}.json")
@@ -1248,6 +1274,7 @@ class StorageService:
                             if messages:
                                 last_message = messages[-1]
                                 conversation["last_message"] = last_message
+                                conversation["preview"] = last_message.get("content", "")[:100]
                                 conversation["message_count"] = len(messages)
                             else:
                                 conversation["message_count"] = 0
@@ -1267,55 +1294,6 @@ class StorageService:
             logger.error(f"Lỗi khi lấy danh sách hội thoại: {str(e)}")
             return []
 
-    def get_conversations_count(self, username: str) -> int:
-        """
-        Đếm số lượng hội thoại của người dùng
-        
-        Args:
-            username (str): Tên người dùng
-            
-        Returns:
-            int: Số lượng hội thoại
-        """
-        try:
-            if self.storage_type == "mongodb":
-                return self.db.conversations.count_documents(
-                    {"username": username, "deleted": {"$ne": True}}
-                )
-            else:
-                # Lưu trữ file
-                conversations_dir = os.path.join(self.data_dir, "conversations")
-                user_dir = os.path.join(conversations_dir, username)
-                
-                if not os.path.exists(user_dir):
-                    return 0
-                
-                # Lấy danh sách file hội thoại metadata
-                meta_dir = os.path.join(user_dir, "metadata")
-                if not os.path.exists(meta_dir):
-                    return 0
-                
-                meta_files = [f for f in os.listdir(meta_dir) if f.endswith('.json')]
-                
-                # Đếm số lượng hội thoại chưa xóa
-                count = 0
-                for meta_file in meta_files:
-                    file_path = os.path.join(meta_dir, meta_file)
-                    try:
-                        with open(file_path, "r", encoding="utf-8") as f:
-                            conversation = json.load(f)
-                        
-                        # Kiểm tra nếu đã xóa
-                        if not conversation.get("deleted", False):
-                            count += 1
-                    except Exception as e:
-                        logger.error(f"Lỗi đọc file hội thoại: {str(e)}")
-                
-                return count
-        except Exception as e:
-            logger.error(f"Lỗi khi đếm số lượng hội thoại: {str(e)}")
-            return 0
-
     def check_conversation_access(self, username: str, conversation_id: str) -> bool:
         """
         Kiểm tra quyền truy cập hội thoại
@@ -1330,22 +1308,27 @@ class StorageService:
         try:
             # Kiểm tra conversation_id có giá trị không
             if not conversation_id:
+                logger.warning(f"Conversation ID rỗng khi kiểm tra quyền truy cập: username={username}")
                 return False
                 
             if self.storage_type == "mongodb":
-                # Kiểm tra xem conversation_id có phải là chuỗi hợp lệ để chuyển thành ObjectId không
-                if isinstance(conversation_id, str) and len(conversation_id) != 24:
-                    return False
-                    
+                # Xử lý conversation_id
+                obj_id = None
                 try:
-                    obj_id = ObjectId(conversation_id) if isinstance(conversation_id, str) else conversation_id
-                except:
-                    # Nếu không thể chuyển đổi thành ObjectId, trả về False
+                    if self._is_valid_object_id(conversation_id):
+                        obj_id = ObjectId(conversation_id)
+                    else:
+                        # Nếu không phải là ObjectId hợp lệ, có thể là UUID từ lưu trữ file
+                        logger.warning(f"Conversation ID không phải ObjectId hợp lệ: {conversation_id}")
+                        return False
+                except Exception as e:
+                    logger.error(f"Lỗi chuyển đổi conversation_id sang ObjectId: {str(e)}")
                     return False
                     
                 conversation = self.db.conversations.find_one({"_id": obj_id})
                 
                 if not conversation:
+                    logger.warning(f"Không tìm thấy hội thoại với ID: {conversation_id}")
                     return False
                 
                 return conversation.get("username") == username
@@ -1359,8 +1342,13 @@ class StorageService:
                 
                 # Kiểm tra file metadata
                 meta_dir = os.path.join(user_dir, "metadata")
+                if not os.path.exists(meta_dir):
+                    os.makedirs(meta_dir, exist_ok=True)
+                    return False
+                
                 meta_file = os.path.join(meta_dir, f"{conversation_id}.json")
                 
+                # Kiểm tra xem file có tồn tại không
                 return os.path.exists(meta_file)
         except Exception as e:
             logger.error(f"Lỗi khi kiểm tra quyền truy cập hội thoại: {str(e)}")
@@ -1377,13 +1365,29 @@ class StorageService:
             Optional[Dict]: Thông tin hội thoại hoặc None nếu không tìm thấy
         """
         try:
+            if not conversation_id:
+                logger.warning("Conversation ID rỗng khi lấy thông tin hội thoại")
+                return None
+                
             if self.storage_type == "mongodb":
+                obj_id = None
+                try:
+                    if self._is_valid_object_id(conversation_id):
+                        obj_id = ObjectId(conversation_id)
+                    else:
+                        logger.warning(f"Conversation ID không phải ObjectId hợp lệ: {conversation_id}")
+                        return None
+                except Exception as e:
+                    logger.error(f"Lỗi chuyển đổi conversation_id sang ObjectId: {str(e)}")
+                    return None
+                    
                 conversation = self.db.conversations.find_one({
-                    "_id": ObjectId(conversation_id) if isinstance(conversation_id, str) else conversation_id,
+                    "_id": obj_id,
                     "deleted": {"$ne": True}
                 })
                 
                 if not conversation:
+                    logger.warning(f"Không tìm thấy hội thoại với ID: {conversation_id}")
                     return None
                 
                 return self._sanitize_mongodb_doc(conversation)
@@ -1409,8 +1413,13 @@ class StorageService:
                         if conversation.get("deleted", False):
                             return None
                         
+                        # Đảm bảo có trường id
+                        if "_id" in conversation and "id" not in conversation:
+                            conversation["id"] = conversation["_id"]
+                        
                         return conversation
                 
+                logger.warning(f"Không tìm thấy metadata cho hội thoại với ID: {conversation_id}")
                 return None
         except Exception as e:
             logger.error(f"Lỗi khi lấy thông tin hội thoại: {str(e)}")
@@ -1428,12 +1437,19 @@ class StorageService:
         """
         try:
             if not conversation_id:
+                logger.warning("Conversation ID rỗng khi lấy tin nhắn hội thoại")
                 return []
                 
             if self.storage_type == "mongodb":
+                obj_id = None
                 try:
-                    obj_id = ObjectId(conversation_id) if isinstance(conversation_id, str) else conversation_id
-                except:
+                    if self._is_valid_object_id(conversation_id):
+                        obj_id = ObjectId(conversation_id)
+                    else:
+                        logger.warning(f"Conversation ID không phải ObjectId hợp lệ khi lấy tin nhắn: {conversation_id}")
+                        return []
+                except Exception as e:
+                    logger.error(f"Lỗi chuyển đổi conversation_id sang ObjectId khi lấy tin nhắn: {str(e)}")
                     return []
                     
                 messages = list(self.db.conversation_messages.find(
@@ -1455,8 +1471,14 @@ class StorageService:
                         with open(messages_file, "r", encoding="utf-8") as f:
                             messages = json.load(f)
                         
+                        # Đảm bảo mỗi tin nhắn có trường id
+                        for msg in messages:
+                            if "_id" in msg and "id" not in msg:
+                                msg["id"] = msg["_id"]
+                        
                         return messages
                 
+                logger.warning(f"Không tìm thấy file tin nhắn cho hội thoại với ID: {conversation_id}")
                 return []
         except Exception as e:
             logger.error(f"Lỗi khi lấy tin nhắn hội thoại: {str(e)}")
@@ -1475,7 +1497,6 @@ class StorageService:
         """
         try:
             timestamp = datetime.now()
-            conversation_id = str(uuid.uuid4())
             
             if not title:
                 title = f"Hội thoại {timestamp.strftime('%d/%m/%Y %H:%M')}"
@@ -1490,9 +1511,12 @@ class StorageService:
             
             if self.storage_type == "mongodb":
                 result = self.db.conversations.insert_one(conversation_data)
+                # Trả về chuỗi chứ không phải ObjectId
                 return str(result.inserted_id)
             else:
                 # Lưu trữ file
+                conversation_id = str(uuid.uuid4())
+                
                 conversations_dir = os.path.join(self.data_dir, "conversations")
                 user_dir = os.path.join(conversations_dir, username)
                 os.makedirs(user_dir, exist_ok=True)
@@ -1520,40 +1544,63 @@ class StorageService:
             logger.error(f"Lỗi khi tạo hội thoại mới: {str(e)}")
             return None
 
-    def update_conversation(self, conversation_id: str, update_data: Dict) -> bool:
+    def add_message_to_conversation(self, conversation_id: str, role: str, content: str) -> bool:
         """
-        Cập nhật thông tin hội thoại
+        Thêm tin nhắn vào hội thoại
         
         Args:
             conversation_id (str): ID hội thoại
-            update_data (Dict): Dữ liệu cập nhật
+            role (str): Vai trò (user/assistant)
+            content (str): Nội dung tin nhắn
             
         Returns:
             bool: True nếu thành công, False nếu thất bại
         """
         try:
-            # Chỉ cho phép cập nhật một số trường nhất định
-            allowed_fields = ["title"]
-            update_fields = {k: v for k, v in update_data.items() if k in allowed_fields}
-            
-            if not update_fields:
+            if not conversation_id:
+                logger.warning("Conversation ID rỗng khi thêm tin nhắn")
                 return False
-            
-            # Thêm thời gian cập nhật
-            update_fields["updated_at"] = datetime.now()
+                    
+            timestamp = datetime.now()
+            message_id = str(uuid.uuid4())
             
             if self.storage_type == "mongodb":
-                result = self.db.conversations.update_one(
-                    {"_id": ObjectId(conversation_id) if isinstance(conversation_id, str) else conversation_id},
-                    {"$set": update_fields}
+                try:
+                    obj_id = None
+                    if self._is_valid_object_id(conversation_id):
+                        obj_id = ObjectId(conversation_id)
+                    else:
+                        logger.warning(f"Conversation ID không phải ObjectId hợp lệ khi thêm tin nhắn: {conversation_id}")
+                        return False
+                except Exception as e:
+                    logger.error(f"Lỗi chuyển đổi conversation_id sang ObjectId khi thêm tin nhắn: {str(e)}")
+                    return False
+                
+                message_data = {
+                    "conversation_id": obj_id,
+                    "id": message_id,
+                    "role": role,
+                    "content": content,
+                    "timestamp": timestamp
+                }
+                
+                # Thêm tin nhắn mới
+                self.db.conversation_messages.insert_one(message_data)
+                
+                # Cập nhật thời gian cập nhật của hội thoại
+                self.db.conversations.update_one(
+                    {"_id": obj_id},
+                    {"$set": {"updated_at": timestamp}}
                 )
                 
-                return result.modified_count > 0
+                return True
             else:
-                # Lưu trữ file - tìm trong tất cả người dùng
+                # Lưu trữ file - tìm thư mục hội thoại
                 conversations_dir = os.path.join(self.data_dir, "conversations")
                 
-                # Tìm trong thư mục của tất cả người dùng
+                # Tìm file hội thoại để lấy username
+                username = None
+                
                 for user_dir in os.listdir(conversations_dir):
                     if not os.path.isdir(os.path.join(conversations_dir, user_dir)):
                         continue
@@ -1564,27 +1611,52 @@ class StorageService:
                     
                     meta_file = os.path.join(meta_dir, f"{conversation_id}.json")
                     if os.path.exists(meta_file):
+                        username = user_dir
+                        
+                        # Cập nhật thời gian cập nhật hội thoại
                         with open(meta_file, "r", encoding="utf-8") as f:
                             conversation = json.load(f)
                         
-                        # Cập nhật thông tin
-                        for key, value in update_fields.items():
-                            conversation[key] = value
+                        conversation["updated_at"] = timestamp.isoformat()
                         
-                        # Cập nhật thời gian
-                        conversation["updated_at"] = update_fields["updated_at"].isoformat()
-                        
-                        # Lưu lại
                         with open(meta_file, "w", encoding="utf-8") as f:
                             json.dump(conversation, f, ensure_ascii=False, indent=2)
                         
-                        return True
+                        break
                 
-                return False
+                if not username:
+                    logger.error(f"Không tìm thấy username cho conversation_id: {conversation_id}")
+                    return False
+                
+                # Tìm file tin nhắn
+                messages_file = os.path.join(conversations_dir, username, f"{conversation_id}.json")
+                
+                messages = []
+                if os.path.exists(messages_file):
+                    with open(messages_file, "r", encoding="utf-8") as f:
+                        messages = json.load(f)
+                
+                # Chuẩn bị tin nhắn mới
+                message_data = {
+                    "conversation_id": conversation_id,
+                    "id": message_id,
+                    "role": role,
+                    "content": content,
+                    "timestamp": timestamp.isoformat()
+                }
+                
+                # Thêm tin nhắn mới
+                messages.append(message_data)
+                
+                # Lưu lại
+                with open(messages_file, "w", encoding="utf-8") as f:
+                    json.dump(messages, f, ensure_ascii=False, indent=2)
+                
+                return True
         except Exception as e:
-            logger.error(f"Lỗi khi cập nhật hội thoại: {str(e)}")
+            logger.error(f"Lỗi khi thêm tin nhắn vào hội thoại: {str(e)}")
             return False
-
+    
     def delete_conversation(self, conversation_id: str) -> bool:
         """
         Xóa hội thoại
