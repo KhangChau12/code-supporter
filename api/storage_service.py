@@ -1765,6 +1765,58 @@ class StorageService:
             logger.error(f"Lỗi khi xóa tất cả hội thoại: {str(e)}")
             return False
 
+    def get_conversations_count(self, username: str) -> int:
+        """
+        Đếm tổng số hội thoại của người dùng
+        
+        Args:
+            username (str): Tên người dùng
+                
+        Returns:
+            int: Tổng số hội thoại
+        """
+        try:
+            if self.storage_type == "mongodb":
+                # Đếm số lượng hội thoại từ MongoDB
+                count = self.db.conversations.count_documents({
+                    "username": username, 
+                    "deleted": {"$ne": True}
+                })
+                return count
+            else:
+                # Lưu trữ file
+                conversations_dir = os.path.join(self.data_dir, "conversations")
+                user_dir = os.path.join(conversations_dir, username)
+                
+                if not os.path.exists(user_dir):
+                    return 0
+                
+                # Lấy danh sách file hội thoại metadata
+                meta_dir = os.path.join(user_dir, "metadata")
+                if not os.path.exists(meta_dir):
+                    return 0
+                
+                # Đếm số file metadata (trừ những hội thoại đã xóa)
+                count = 0
+                meta_files = [f for f in os.listdir(meta_dir) if f.endswith('.json')]
+                
+                for meta_file in meta_files:
+                    file_path = os.path.join(meta_dir, meta_file)
+                    try:
+                        with open(file_path, "r", encoding="utf-8") as f:
+                            conversation = json.load(f)
+                        
+                        # Kiểm tra nếu chưa xóa
+                        if not conversation.get("deleted", False):
+                            count += 1
+                    except Exception as e:
+                        logger.error(f"Lỗi đọc file hội thoại khi đếm: {str(e)}")
+                
+                return count
+        except Exception as e:
+            logger.error(f"Lỗi khi đếm tổng số hội thoại: {str(e)}")
+            return 0
+
     def add_message_to_conversation(self, conversation_id: str, role: str, content: str) -> bool:
         """
         Thêm tin nhắn vào hội thoại
