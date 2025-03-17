@@ -14,6 +14,7 @@
     display: flex;
     height: calc(100vh - 70px); /* Chiều cao của viewport trừ chiều cao header */
     overflow: hidden;
+    width: 100%;
 }
 
 /* Điều chỉnh sidebar */
@@ -25,6 +26,7 @@
     flex-direction: column;
     transition: transform 0.3s ease;
     position: relative; /* Để vị trí relative cho các elements con absolute */
+    z-index: 20;
 }
 
 /* Container danh sách hội thoại có thể cuộn độc lập */
@@ -66,6 +68,7 @@
     border-bottom: 1px solid var(--border-color);
     cursor: pointer;
     transition: background-color 0.2s;
+    position: relative;
 }
 
 .conversation-item:hover {
@@ -102,7 +105,7 @@
 .new-chat-button {
     margin: 16px;
     padding: 10px 12px;
-    background-color: var(--primary-color);
+    background: linear-gradient(135deg, var(--primary-color), var(--primary-hover));
     color: white;
     border: none;
     border-radius: 8px;
@@ -113,6 +116,7 @@
     align-items: center;
     justify-content: center;
     gap: 8px;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
 }
 
 .new-chat-button:hover {
@@ -159,6 +163,8 @@
     cursor: pointer;
     transition: all 0.2s;
     color: var(--text-muted);
+    background: transparent;
+    border: none;
 }
 
 .action-button:hover {
@@ -168,72 +174,12 @@
 
 /* CSS mới cho cấu trúc chat đã điều chỉnh */
 
-/* Container linh hoạt cho bố cục hai phần */
-.chat-content-wrapper {
-    display: flex;
-    height: calc(100vh - 70px); /* Chiều cao của viewport trừ chiều cao header */
-    overflow: hidden;
-}
-
-/* Điều chỉnh sidebar */
-.chat-sidebar {
-    width: 280px;
-    background-color: var(--card-bg);
-    border-right: 1px solid var(--border-color);
-    display: flex;
-    flex-direction: column;
-    transition: transform 0.3s ease;
-    position: relative; /* Để vị trí relative cho các elements con absolute */
-}
-
-/* Container danh sách hội thoại có thể cuộn độc lập */
-.conversations-list-container {
-    flex: 1;
-    overflow: hidden;
-    position: relative;
-}
-
-.conversations-list {
-    height: 100%;
-    overflow-y: auto;
-    padding-bottom: 10px; /* Thêm padding để tránh nội dung cuối bị che */
-    /* Tùy chỉnh scrollbar */
-    scrollbar-width: thin;
-    scrollbar-color: var(--border-color) transparent;
-}
-
-/* Tùy chỉnh thanh cuộn cho conversations-list */
-.conversations-list::-webkit-scrollbar {
-    width: 6px;
-}
-
-.conversations-list::-webkit-scrollbar-track {
-    background: transparent;
-}
-
-.conversations-list::-webkit-scrollbar-thumb {
-    background-color: var(--border-color);
-    border-radius: 6px;
-}
-
-.conversations-list::-webkit-scrollbar-thumb:hover {
-    background-color: var(--text-muted);
-}
-
-/* Điều chỉnh khu vực chat chính */
-.chat-main {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    position: relative;
-    overflow: hidden;
-}
-
 /* Container cho phần messages có thể cuộn độc lập */
 .messages-container {
     flex: 1;
     overflow: hidden;
     position: relative;
+    background-color: var(--bg-color);
 }
 
 .messages {
@@ -275,14 +221,16 @@
     gap: 10px;
     border-top: 1px solid var(--border-color);
     background-color: var(--card-bg);
-    position: relative;
+    position: sticky;
+    bottom: 0;
+    width: 100%;
     z-index: 10;
 }
 
 /* Nút cuộn xuống cuối - hiển thị rõ ràng */
 .scroll-bottom-button {
-    position: absolute;
-    bottom: 80px; /* Vị trí ngay phía trên input container */
+    position: fixed;
+    bottom: 90px; /* Vị trí ngay phía trên input container */
     right: 20px;
     width: 40px;
     height: 40px;
@@ -294,10 +242,11 @@
     justify-content: center;
     cursor: pointer;
     box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
-    z-index: 5;
+    z-index: 15;
     opacity: 0;
     visibility: hidden;
     transition: opacity 0.3s, visibility 0.3s, transform 0.3s;
+    border: none;
 }
 
 .scroll-bottom-button.visible {
@@ -308,43 +257,6 @@
 .scroll-bottom-button:hover {
     transform: translateY(-2px);
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
-}
-
-/* Điều chỉnh màu cho tin nhắn bot trong chế độ tối */
-body:not(.light-mode) .bot-message {
-    background-color: #2d2d2d; /* Màu tối hơn cho bot message */
-    border-color: #3d3d3d;
-}
-
-/* Chế độ responsive */
-@media (max-width: 768px) {
-    .chat-sidebar {
-        position: absolute;
-        left: 0;
-        top: 0;
-        bottom: 0;
-        z-index: 20;
-        transform: translateX(-100%);
-        width: 85%;
-        max-width: 280px;
-    }
-    
-    .chat-sidebar.show {
-        transform: translateX(0);
-    }
-    
-    .toggle-sidebar {
-        position: absolute;
-        top: 10px;
-        right: 10px;
-    }
-    
-    .scroll-bottom-button {
-        width: 36px;
-        height: 36px;
-        right: 16px;
-        bottom: 70px;
-    }
 }
 
 /* Hiệu ứng animation nâng cao */
@@ -358,13 +270,22 @@ body:not(.light-mode) .bot-message {
     to { transform: translateY(0); opacity: 1; }
 }
 
+/* IMPROVED MESSAGE STYLING */
 .message {
-    animation: slideIn 0.3s ease forwards;
+    max-width: 85%;
+    padding: 14px 18px;
+    border-radius: 18px;
+    word-wrap: break-word;
+    line-height: 1.5;
+    position: relative;
+    animation: messageAppear 0.3s ease forwards;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+    transition: transform 0.2s;
 }
 
-/* Đảm bảo style cho modal khi có thêm chat mới */
-.modal-overlay {
-    z-index: 1000; /* Đảm bảo modal hiển thị trên cùng */
+.message:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 3px 6px rgba(0, 0, 0, 0.1);
 }
 
 @keyframes messageAppear {
@@ -386,25 +307,15 @@ body:not(.light-mode) .bot-message {
     align-self: flex-end;
     background: linear-gradient(135deg, var(--primary-color), var(--primary-hover));
     color: white;
-    border-bottom-right-radius: 2px;
+    border-bottom-right-radius: 8px;
     transform-origin: right;
-}
-
-:root {
-    --bot-message-bg: #2d2d2d; /* Darker background for bot messages in dark mode */
-    --bot-message-border: #3d3d3d; /* Darker border for bot messages in dark mode */
-}
-
-body.light-mode {
-    --bot-message-bg: #f5f5f5; /* Light background for bot messages in light mode */
-    --bot-message-border: #e2e8f0; /* Light border for bot messages in light mode */
 }
 
 .bot-message {
     align-self: flex-start;
-    background-color: var(--bot-message-bg);
-    border: 1px solid var(--bot-message-border);
-    border-bottom-left-radius: 2px;
+    background-color: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-bottom-left-radius: 8px;
 }
 
 .message-time {
@@ -510,18 +421,6 @@ body.light-mode {
     border-bottom-right-radius: 8px;
 }
 
-.input-container {
-    padding: 12px 16px;
-    display: flex;
-    gap: 10px;
-    border-top: 1px solid var(--border-color);
-    background-color: var(--card-bg);
-    position: sticky;
-    bottom: 0;
-    width: 100%;
-    z-index: 10;
-}
-
 #message-input {
     flex: 1;
     resize: none;
@@ -553,8 +452,10 @@ body.light-mode {
     border-radius: 50%;
     background: linear-gradient(135deg, var(--primary-color), var(--primary-hover));
     color: white;
+    border: none;
     transition: all 0.3s;
     box-shadow: 0 4px 10px rgba(99, 102, 241, 0.3);
+    cursor: pointer;
 }
 
 #send-button:hover {
@@ -582,6 +483,8 @@ body.light-mode {
     cursor: pointer;
     color: var(--text-muted);
     transition: all 0.2s;
+    background: transparent;
+    border: none;
 }
 
 .input-action:hover {
@@ -660,8 +563,8 @@ body.light-mode {
     align-self: flex-start;
     background-color: var(--card-bg);
     border: 1px solid var(--border-color);
-    border-radius: 12px;
-    border-bottom-left-radius: 2px;
+    border-radius: 18px;
+    border-bottom-left-radius: 8px;
     padding: 12px 16px;
     display: flex;
     gap: 6px;
@@ -946,6 +849,8 @@ body.light-mode {
     border-radius: 4px;
     color: var(--text-muted);
     transition: all 0.2s;
+    background: transparent;
+    border: none;
 }
 
 .saved-code-action:hover {
@@ -1149,11 +1054,13 @@ body.light-mode {
 .code-preview-action.download {
     background-color: var(--secondary-color);
     color: white;
+    border: none;
 }
 
 .code-preview-action.copy {
     background-color: var(--input-bg);
     color: var(--text-color);
+    border: none;
 }
 
 .code-preview-action.download:hover {
@@ -1205,52 +1112,6 @@ body.light-mode {
 .code-preview-close:hover {
     background-color: var(--input-bg);
     color: var(--text-color);
-}
-
-/* Responsive adjustments */
-@media (max-width: 768px) {
-    .message {
-        max-width: 92%;
-    }
-    
-    .input-container {
-        padding: 12px;
-    }
-    
-    .code-preview-content {
-        width: 95%;
-        height: 85vh;
-    }
-    
-    .chat-sidebar {
-        position: absolute;
-        left: 0;
-        top: 0;
-        bottom: 0;
-        z-index: 10;
-        transform: translateX(-100%);
-    }
-    
-    .chat-sidebar.show {
-        transform: translateX(0);
-    }
-    
-    .toggle-sidebar {
-        display: block;
-        position: absolute;
-        bottom: 20px;
-        right: -16px;
-        width: 32px;
-        height: 32px;
-        background-color: var(--primary-color);
-        color: white;
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        cursor: pointer;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
-    }
 }
 
 /* CSS cho sidebar footer */
@@ -1447,6 +1308,58 @@ body.light-mode {
     .mobile-only {
         display: block;
     }
+    
+    .chat-sidebar {
+        position: absolute;
+        left: 0;
+        top: 0;
+        bottom: 0;
+        z-index: 30;
+        transform: translateX(-100%);
+        width: 85%;
+        max-width: 280px;
+    }
+    
+    .chat-sidebar.show {
+        transform: translateX(0);
+    }
+    
+    .toggle-sidebar {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        width: 32px;
+        height: 32px;
+        background-color: var(--primary-color);
+        color: white;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+        border: none;
+    }
+    
+    .message {
+        max-width: 92%;
+    }
+    
+    .input-container {
+        padding: 12px;
+    }
+    
+    .code-preview-content {
+        width: 95%;
+        height: 85vh;
+    }
+    
+    .scroll-bottom-button {
+        width: 36px;
+        height: 36px;
+        right: 16px;
+        bottom: 80px;
+    }
 }
 
 /* Animation cho conversation mới */
@@ -1542,39 +1455,33 @@ body.light-mode {
     color: var(--primary-color);
 }
 
-.chat-main {
-    flex: 1;
+/* Empty state styling */
+.empty-state {
     display: flex;
     flex-direction: column;
-    overflow: hidden;
-}
-
-.scroll-bottom-button {
-    position: fixed;
-    bottom: 90px; /* Position above the input area */
-    right: 20px;
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    background: var(--primary-color);
-    color: white;
-    display: flex;
     align-items: center;
     justify-content: center;
-    cursor: pointer;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
-    z-index: 15;
-    opacity: 0;
-    visibility: hidden;
-    transition: opacity 0.3s, visibility 0.3s, transform 0.3s;
+    padding: 40px 20px;
+    text-align: center;
 }
 
-.scroll-bottom-button.visible {
-    opacity: 1;
-    visibility: visible;
+.empty-state svg {
+    margin-bottom: 16px;
+    color: var(--text-muted);
+    opacity: 0.7;
 }
 
-.scroll-bottom-button:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+.empty-state h3 {
+    margin-bottom: 8px;
+    font-weight: 600;
+}
+
+.empty-state p {
+    color: var(--text-muted);
+    margin-bottom: 20px;
+}
+
+/* Additional animations */
+@keyframes spin {
+    to { transform: rotate(360deg); }
 }
