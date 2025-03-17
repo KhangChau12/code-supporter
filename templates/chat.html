@@ -11,7 +11,9 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/chat.css') }}">
 </head>
 <body>
+    <!-- Wrapper chính cho toàn bộ ứng dụng -->
     <div class="app-container">
+        <!-- Header cố định ở trên cùng -->
         <header class="app-header">
             <div class="brand">
                 <h1>Code Supporter</h1>
@@ -50,9 +52,10 @@
             </div>
         </header>
         
-        <main class="chat-container">
-            <!-- Sidebar cho danh sách hội thoại -->
-            <div class="chat-sidebar">
+        <!-- Container linh hoạt cho phần nội dung -->
+        <div class="chat-content-wrapper">
+            <!-- Sidebar cho danh sách hội thoại - thiết kế lại với scrolling riêng biệt -->
+            <aside class="chat-sidebar">
                 <button id="new-chat-button" class="new-chat-button">
                     <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <line x1="12" y1="5" x2="12" y2="19"></line>
@@ -61,11 +64,14 @@
                     Tạo hội thoại mới
                 </button>
                 
-                <div class="conversations-list" id="conversations-list">
-                    <!-- Danh sách hội thoại sẽ được thêm bằng JavaScript -->
-                    <div class="loading-conversations">
-                        <div class="spinner"></div>
-                        <span>Đang tải hội thoại...</span>
+                <!-- Danh sách hội thoại có cuộn riêng -->
+                <div class="conversations-list-container">
+                    <div class="conversations-list" id="conversations-list">
+                        <!-- Danh sách hội thoại sẽ được thêm bằng JavaScript -->
+                        <div class="loading-conversations">
+                            <div class="spinner"></div>
+                            <span>Đang tải hội thoại...</span>
+                        </div>
                     </div>
                 </div>
                 
@@ -86,9 +92,10 @@
                         <line x1="6" y1="6" x2="18" y2="18"></line>
                     </svg>
                 </button>
-            </div>
+            </aside>
             
-            <div class="chat-main">
+            <!-- Phần chat chính - tái cấu trúc để hoạt động độc lập -->
+            <main class="chat-main">
                 <!-- Header của khu vực chat -->
                 <div class="chat-header">
                     <div class="chat-title" id="chat-title">Hội thoại mới</div>
@@ -108,10 +115,19 @@
                     </div>
                 </div>
                 
-                <!-- Khu vực hiển thị tin nhắn -->
-                <div id="messages" class="messages"></div>
+                <!-- Container riêng cho phần messages có thể cuộn -->
+                <div class="messages-container">
+                    <div id="messages" class="messages"></div>
+                </div>
                 
-                <!-- Khu vực nhập tin nhắn -->
+                <!-- Nút cuộn xuống cuối - thêm mới -->
+                <div id="scroll-bottom-button" class="scroll-bottom-button" title="Cuộn xuống cuối">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="6 9 12 15 18 9"></polyline>
+                    </svg>
+                </div>
+                
+                <!-- Khu vực nhập tin nhắn được tách riêng -->
                 <div class="input-container">
                     <textarea id="message-input" placeholder="Nhập tin nhắn..." rows="1"></textarea>
                     <button id="send-button" aria-label="Send message">
@@ -121,8 +137,8 @@
                         </svg>
                     </button>
                 </div>
-            </div>
-        </main>
+            </main>
+        </div>
         
         <!-- Dialog đổi tên hội thoại -->
         <div class="modal-overlay" id="rename-modal">

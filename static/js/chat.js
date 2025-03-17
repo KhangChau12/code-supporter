@@ -1162,45 +1162,88 @@ document.addEventListener('DOMContentLoaded', function() {
             messageInput.focus();
         }, 100);
     }
-});
 
-document.addEventListener('DOMContentLoaded', function() {
-    // Create scroll to bottom button
-    const scrollButton = document.createElement('div');
-    scrollButton.className = 'scroll-bottom-button';
-    scrollButton.innerHTML = `
-        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <polyline points="6 9 12 15 18 9"></polyline>
-        </svg>
-    `;
-    scrollButton.setAttribute('title', 'Cuộn xuống cuối');
+    // Tham chiếu đến các phần tử DOM
+    const scrollBottomButton = document.getElementById('scroll-bottom-button');
     
-    // Add to chat main
-    const chatMain = document.querySelector('.chat-main');
-    if (chatMain) {
-        chatMain.appendChild(scrollButton);
+    // Xử lý nút cuộn xuống cuối
+    if (scrollBottomButton && messagesContainer) {
+        // Xử lý sự kiện click cho nút cuộn xuống
+        scrollBottomButton.addEventListener('click', function() {
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        });
+        
+        // Hiển thị/ẩn nút dựa vào vị trí cuộn
+        messagesContainer.addEventListener('scroll', function() {
+            const isScrolledUp = messagesContainer.scrollHeight - messagesContainer.scrollTop - messagesContainer.clientHeight > 200;
+            
+            if (isScrolledUp) {
+                scrollBottomButton.classList.add('visible');
+            } else {
+                scrollBottomButton.classList.remove('visible');
+            }
+        });
+        
+        // Kiểm tra ban đầu để hiển thị nút nếu cần
+        function checkInitialScroll() {
+            const isScrolledUp = messagesContainer.scrollHeight - messagesContainer.scrollTop - messagesContainer.clientHeight > 200;
+            if (isScrolledUp) {
+                scrollBottomButton.classList.add('visible');
+            }
+        }
+        
+        // Gọi kiểm tra sau khi trang đã load hoàn toàn
+        setTimeout(checkInitialScroll, 500);
     }
     
-    // Add click event
-    scrollButton.addEventListener('click', function() {
-        const messagesContainer = document.getElementById('messages');
+    // Ghi đè hàm processStream (nếu tồn tại) để sử dụng cập nhật cục bộ
+    if (typeof window.processStream === 'function') {
+        const originalProcessStream = window.processStream;
+        window.processStream = function(data) {
+            const result = originalProcessStream(data);
+            
+            // Chỉ cập nhật thông tin của hội thoại hiện tại
+            if (data.done && window.currentConversationId) {
+                updateCurrentConversationInList(window.currentConversationId);
+            }
+            
+            return result;
+        };
+    }
+    
+    // Đảm bảo chiều cao tin nhắn cuộn đúng khi thay đổi kích thước cửa sổ
+    window.addEventListener('resize', function() {
         if (messagesContainer) {
-            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+            // Cuộn xuống cuối nếu đang ở gần cuối
+            const isNearBottom = messagesContainer.scrollHeight - messagesContainer.scrollTop - messagesContainer.clientHeight < 100;
+            if (isNearBottom) {
+                messagesContainer.scrollTop = messagesContainer.scrollHeight;
+            }
         }
     });
     
-    // Show/hide button based on scroll position
-    const messagesContainer = document.getElementById('messages');
-    if (messagesContainer) {
-        messagesContainer.addEventListener('scroll', function() {
-            // Check if user has scrolled up
-            const isScrolledUp = messagesContainer.scrollHeight - messagesContainer.scrollTop - messagesContainer.clientHeight > 100;
-            
-            if (isScrolledUp) {
-                scrollButton.classList.add('visible');
-            } else {
-                scrollButton.classList.remove('visible');
+    // Giữ cho cuộn luôn hoạt động khi có thay đổi DOM (tin nhắn mới)
+    const messagesObserver = new MutationObserver(function(mutations) {
+        mutations.forEach(function(mutation) {
+            if (mutation.type === 'childList' && mutation.addedNodes.length > 0) {
+                // Kiểm tra nếu đang ở gần cuối, thì cuộn xuống
+                const isNearBottom = messagesContainer.scrollHeight - messagesContainer.scrollTop - messagesContainer.clientHeight < 100;
+                if (isNearBottom) {
+                    messagesContainer.scrollTop = messagesContainer.scrollHeight;
+                }
+                
+                // Kiểm tra hiển thị nút cuộn
+                const isScrolledUp = messagesContainer.scrollHeight - messagesContainer.scrollTop - messagesContainer.clientHeight > 200;
+                if (isScrolledUp) {
+                    scrollBottomButton.classList.add('visible');
+                } else {
+                    scrollBottomButton.classList.remove('visible');
+                }
             }
         });
+    });
+    
+    if (messagesContainer) {
+        messagesObserver.observe(messagesContainer, { childList: true });
     }
 });
