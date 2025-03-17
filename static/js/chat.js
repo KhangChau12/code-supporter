@@ -782,8 +782,11 @@ document.addEventListener('DOMContentLoaded', function() {
                     messageInput.focus();
                     isWaitingForResponse = false;
                     
-                    // Tải lại danh sách hội thoại để cập nhật
-                    loadConversations();
+                    // Thay vì load lại toàn bộ danh sách hội thoại
+                    // loadConversations();
+                    
+                    // Chỉ cập nhật thông tin của hội thoại hiện tại trong danh sách
+                    updateCurrentConversationInList(currentConversationId);
                     
                     return;
                 }
@@ -839,6 +842,37 @@ document.addEventListener('DOMContentLoaded', function() {
             messageInput.focus();
             isWaitingForResponse = false;
         });
+    }
+
+    // Hàm cập nhật thông tin của hội thoại hiện tại trong danh sách
+    function updateCurrentConversationInList(conversationId) {
+        if (!conversationId) return;
+        
+        const conversationElement = document.querySelector(`.conversation-item[data-id="${conversationId}"]`);
+        if (conversationElement) {
+            // Cập nhật thời gian hiển thị
+            const timeElement = conversationElement.querySelector('.conversation-time');
+            if (timeElement) {
+                timeElement.textContent = formatTime(new Date());
+            }
+            
+            // Cập nhật preview text (dùng tin nhắn cuối cùng từ bot)
+            const previewElement = conversationElement.querySelector('.conversation-preview');
+            if (previewElement && currentStreamBuffer) {
+                // Lấy 50 ký tự đầu tiên của tin nhắn cuối cùng để làm preview
+                let preview = currentStreamBuffer.substring(0, 50);
+                if (currentStreamBuffer.length > 50) {
+                    preview += '...';
+                }
+                previewElement.textContent = preview;
+            }
+            
+            // Di chuyển hội thoại lên đầu danh sách nếu cần
+            const parentList = conversationElement.parentNode;
+            if (parentList && parentList.firstChild !== conversationElement) {
+                parentList.insertBefore(conversationElement, parentList.firstChild);
+            }
+        }
     }
     
     // Thêm tin nhắn vào UI
@@ -1130,3 +1164,43 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 
+document.addEventListener('DOMContentLoaded', function() {
+    // Create scroll to bottom button
+    const scrollButton = document.createElement('div');
+    scrollButton.className = 'scroll-bottom-button';
+    scrollButton.innerHTML = `
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="6 9 12 15 18 9"></polyline>
+        </svg>
+    `;
+    scrollButton.setAttribute('title', 'Cuộn xuống cuối');
+    
+    // Add to chat main
+    const chatMain = document.querySelector('.chat-main');
+    if (chatMain) {
+        chatMain.appendChild(scrollButton);
+    }
+    
+    // Add click event
+    scrollButton.addEventListener('click', function() {
+        const messagesContainer = document.getElementById('messages');
+        if (messagesContainer) {
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        }
+    });
+    
+    // Show/hide button based on scroll position
+    const messagesContainer = document.getElementById('messages');
+    if (messagesContainer) {
+        messagesContainer.addEventListener('scroll', function() {
+            // Check if user has scrolled up
+            const isScrolledUp = messagesContainer.scrollHeight - messagesContainer.scrollTop - messagesContainer.clientHeight > 100;
+            
+            if (isScrolledUp) {
+                scrollButton.classList.add('visible');
+            } else {
+                scrollButton.classList.remove('visible');
+            }
+        });
+    }
+});
