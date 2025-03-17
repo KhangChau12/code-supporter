@@ -781,12 +781,25 @@ document.addEventListener('DOMContentLoaded', function() {
                     sendButton.disabled = false;
                     messageInput.focus();
                     isWaitingForResponse = false;
-                    
-                    // Thay vì load lại toàn bộ danh sách hội thoại
-                    // loadConversations();
-                    
-                    // Chỉ cập nhật thông tin của hội thoại hiện tại trong danh sách
-                    updateCurrentConversationInList(currentConversationId);
+
+                    // Thay vì gọi loadConversations() hoặc updateCurrentConversationInList()
+                    // Gọi hàm mới
+                    if (currentConversationId) {
+                        const title = chatTitle.textContent;
+                        const preview = currentStreamBuffer.substring(0, 50) + (currentStreamBuffer.length > 50 ? '...' : '');
+                        addOrUpdateConversation(currentConversationId, title, preview);
+                    }
+                    else if (data.conversation_id) {
+                        // Nếu nhận được conversation_id mới, cập nhật
+                        if (!currentConversationId || !isValidId(currentConversationId)) {
+                            currentConversationId = data.conversation_id;
+                            chatTitle.textContent = 'Hội thoại mới';
+                            
+                            // Thêm hội thoại mới vào danh sách
+                            const preview = currentStreamBuffer.substring(0, 50) + (currentStreamBuffer.length > 50 ? '...' : '');
+                            addOrUpdateConversation(currentConversationId, 'Hội thoại mới', preview);
+                        }
+                    }                    
                     
                     return;
                 }
@@ -1245,5 +1258,37 @@ document.addEventListener('DOMContentLoaded', function() {
     
     if (messagesContainer) {
         messagesObserver.observe(messagesContainer, { childList: true });
+    }
+
+    // Hàm thêm hoặc cập nhật một hội thoại vào danh sách
+    function addOrUpdateConversation(conversationId, title, preview) {
+        if (!conversationId) return;
+        
+        // Kiểm tra xem hội thoại đã tồn tại chưa
+        const existingIndex = conversations.findIndex(c => c.id === conversationId);
+        const now = new Date();
+        
+        if (existingIndex !== -1) {
+            // Cập nhật hội thoại hiện có
+            conversations[existingIndex].title = title || conversations[existingIndex].title;
+            conversations[existingIndex].preview = preview || conversations[existingIndex].preview;
+            conversations[existingIndex].updated_at = now.toISOString();
+        } else {
+            // Thêm hội thoại mới vào đầu danh sách
+            const newConversation = {
+                id: conversationId,
+                title: title || 'Hội thoại mới',
+                preview: preview || 'Tin nhắn mới',
+                created_at: now.toISOString(),
+                updated_at: now.toISOString()
+            };
+            conversations.unshift(newConversation);
+        }
+        
+        // Cập nhật giao diện
+        renderConversationList();
+        
+        // Chọn hội thoại mới tạo
+        updateActiveConversation(conversationId);
     }
 });
