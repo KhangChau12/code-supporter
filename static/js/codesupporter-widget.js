@@ -152,7 +152,7 @@
           display: flex;
           flex-direction: column;
           overflow: hidden;
-          transition: all 0.3s ease;
+          transition: all 0.3s ease, transform 0.3s ease, width 0.3s ease, height 0.3s ease;
           opacity: 0;
           transform: scale(0.9);
           transform-origin: ${this.config.position.includes('right') ? 'bottom right' : 'bottom left'};
@@ -163,6 +163,7 @@
           opacity: 1;
           transform: scale(1);
           pointer-events: auto;
+          transform-origin: center;
         }
         
         .cs-chat-window.maximized {
@@ -176,9 +177,11 @@
           max-height: none !important;
           border-radius: 16px;
           z-index: 9999;
-          transform-origin: ${this.config.position.includes('right') ? 'bottom right' : 'bottom left'};
+          transform: scale(1);
+          transition: all 0.3s ease, width 0.3s ease, height 0.3s ease, top 0.3s ease, left 0.3s ease, right 0.3s ease, bottom 0.3s ease;
           transform: scale(1);
           transition: all 0.3s ease;
+          transform-origin: center;
         }
         
         .cs-chat-header {
@@ -929,24 +932,6 @@
     
     toggleMaximize() {
       this.isMaximized = !this.isMaximized;
-      
-      // Thêm/xóa class có animation mượt từ gốc
-      if (this.isMaximized) {
-        // Tạo hiệu ứng mượt từ góc phải dưới
-        const buttonRect = this.chatButton.getBoundingClientRect();
-        const originX = this.config.position.includes('right') ? 
-          (window.innerWidth - buttonRect.right + buttonRect.width/2) : 
-          (buttonRect.left + buttonRect.width/2);
-        
-        const originY = this.config.position.includes('bottom') ? 
-          (window.innerHeight - buttonRect.top) : 
-          buttonRect.bottom;
-          
-        // Đặt transform-origin dựa trên vị trí của nút chat
-        this.chatWindow.style.transformOrigin = 
-          `${this.config.position.includes('right') ? 'right' : 'left'} 
-           ${this.config.position.includes('bottom') ? 'bottom' : 'top'}`;
-      }
       
       // Thêm/xóa class maximized
       this.chatWindow.classList.toggle('maximized', this.isMaximized);
