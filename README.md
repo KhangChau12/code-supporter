@@ -1,4 +1,4 @@
-# Code Supporter
+# Code Supporter: https://theoretical-karen-khangchauproject-bd00c073.koyeb.app/ (demo)
 
 Code Supporter is an intelligent chatbot designed to assist programmers with learning and software development challenges. Built with Flask, it offers an intuitive chat interface and API for seamless integration into various platforms.
 
