@@ -1,12 +1,12 @@
 /**
  * Code Supporter Widget - JavaScript cho tích hợp vào trang web
- * Cập nhật: Thêm tính năng phóng to/thu nhỏ và cải tiến giao diện
+ * Cập nhật: Thêm nhiều tùy biến màu sắc, logo tùy chỉnh và cải thiện hiệu ứng
  */
 (function() {
   // Hàm tạo widget
   class CodeSupporterWidget {
     constructor(options = {}) {
-      // Cấu hình mặc định
+      // Cấu hình mặc định - với theme lava từ style2.css
       this.config = {
         apiUrl: options.apiUrl || 'http://localhost:5000/api/chat/public',
         apiKey: options.apiKey || '',
@@ -19,7 +19,19 @@
         showOnInit: options.showOnInit || false,
         sessionId: options.sessionId || `session-${Date.now()}`,
         userId: options.userId || null,  // ID của người dùng từ hệ thống của bạn
-        userInfo: options.userInfo || null  // Thông tin bổ sung về người dùng
+        userInfo: options.userInfo || null,  // Thông tin bổ sung về người dùng
+        
+        // Tùy chỉnh màu sắc mới (mặc định theo theme lava)
+        primaryColor: options.primaryColor || '#FF5000',  // Lava orange
+        primaryHoverColor: options.primaryHoverColor || '#FF6A00',
+        backgroundColor: options.backgroundColor || '#101010', // Dark black
+        cardBackgroundColor: options.cardBackgroundColor || '#1A1A1A',
+        textColor: options.textColor || '#FFFFFF',
+        secondaryColor: options.secondaryColor || '#FF7800',
+        borderColor: options.borderColor || '#333333',
+        
+        // Logo tùy chỉnh sẽ hiển thị làm watermark
+        logoUrl: options.logoUrl || null
       };
       
       this.conversationHistory = [];
@@ -60,13 +72,14 @@
       
       const css = `
         .cs-widget-container {
-          --cs-primary-color: #4361ee;
-          --cs-primary-gradient: linear-gradient(135deg, #4361ee, #3a0ca3);
-          --cs-text-color: ${isDark ? '#ffffff' : '#333333'};
-          --cs-bg-color: ${isDark ? '#1e1e1e' : '#ffffff'};
-          --cs-secondary-bg: ${isDark ? '#2d2d2d' : '#f5f5f5'};
-          --cs-border-color: ${isDark ? '#555555' : '#dddddd'};
-          --cs-accent-color: #4CC9F0;
+          --cs-primary-color: ${this.config.primaryColor};
+          --cs-primary-hover: ${this.config.primaryHoverColor};
+          --cs-primary-gradient: linear-gradient(135deg, ${this.config.primaryColor}, ${this.config.primaryHoverColor});
+          --cs-text-color: ${this.config.textColor};
+          --cs-bg-color: ${this.config.backgroundColor};
+          --cs-secondary-bg: ${this.config.cardBackgroundColor};
+          --cs-border-color: ${this.config.borderColor};
+          --cs-accent-color: ${this.config.secondaryColor};
           
           font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
           font-size: 14px;
@@ -95,13 +108,13 @@
           justify-content: center;
           align-items: center;
           cursor: pointer;
-          box-shadow: 0 4px 12px rgba(67, 97, 238, 0.3);
+          box-shadow: 0 4px 12px rgba(255, 80, 0, 0.3);
           transition: transform 0.3s, box-shadow 0.3s;
         }
         
         .cs-chat-button:hover {
           transform: scale(1.1);
-          box-shadow: 0 6px 16px rgba(67, 97, 238, 0.4);
+          box-shadow: 0 6px 16px rgba(255, 80, 0, 0.4);
         }
         
         .cs-chat-icon {
@@ -146,6 +159,9 @@
           max-height: none !important;
           border-radius: 16px;
           z-index: 9999;
+          transform-origin: ${this.config.position.includes('right') ? 'bottom right' : 'bottom left'};
+          transform: scale(1);
+          transition: all 0.3s ease;
         }
         
         .cs-chat-header {
@@ -156,6 +172,8 @@
           justify-content: space-between;
           align-items: center;
           box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+          position: relative;
+          z-index: 2;
         }
         
         .cs-chat-title-container {
@@ -215,7 +233,26 @@
           flex-direction: column;
           gap: 12px;
           scroll-behavior: smooth;
+          position: relative;
         }
+        
+        /* Watermark logo background if provided */
+        ${this.config.logoUrl ? `
+        .cs-messages-container::before {
+          content: '';
+          position: absolute;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          background-image: url(${this.config.logoUrl});
+          background-position: center;
+          background-repeat: no-repeat;
+          background-size: 40%;
+          opacity: 0.05;
+          pointer-events: none;
+          z-index: 0;
+        }` : ''}
         
         .cs-message {
           max-width: 85%;
@@ -226,6 +263,8 @@
           box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
           transition: transform 0.2s;
           animation: messageAppear 0.3s ease forwards;
+          position: relative;
+          z-index: 1;
         }
         
         @keyframes messageAppear {
@@ -263,6 +302,8 @@
           gap: 10px;
           border-top: 1px solid var(--cs-border-color);
           background-color: var(--cs-bg-color);
+          position: relative;
+          z-index: 2;
         }
         
         .cs-input {
@@ -283,7 +324,7 @@
         
         .cs-input:focus {
           border-color: var(--cs-primary-color);
-          box-shadow: 0 0 0 2px rgba(67, 97, 238, 0.2);
+          box-shadow: 0 0 0 2px rgba(255, 80, 0, 0.2);
         }
         
         .cs-send-button {
@@ -297,13 +338,13 @@
           align-items: center;
           cursor: pointer;
           border: none;
-          box-shadow: 0 2px 6px rgba(67, 97, 238, 0.3);
+          box-shadow: 0 2px 6px rgba(255, 80, 0, 0.3);
           transition: transform 0.2s, box-shadow 0.2s;
         }
         
         .cs-send-button:hover {
           transform: translateY(-2px);
-          box-shadow: 0 4px 8px rgba(67, 97, 238, 0.4);
+          box-shadow: 0 4px 8px rgba(255, 80, 0, 0.4);
         }
         
         .cs-send-button:disabled {
@@ -324,6 +365,8 @@
           gap: 4px;
           align-items: center;
           box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+          position: relative;
+          z-index: 1;
         }
         
         .cs-typing-dot {
@@ -345,7 +388,7 @@
         }
         
         .cs-code-block {
-          background-color: ${isDark ? '#1a1a1a' : '#f8f8f8'};
+          background-color: #1a1a1a;
           padding: 14px;
           border-radius: 8px;
           font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
@@ -373,7 +416,7 @@
         }
         
         .cs-copy-button:hover {
-          background-color: #3a0ca3;
+          background-color: var(--cs-primary-hover);
         }
         
         .cs-code-container:hover .cs-copy-button {
@@ -391,6 +434,8 @@
           opacity: 0.8;
           background-color: var(--cs-bg-color);
           border-top: 1px solid var(--cs-border-color);
+          position: relative;
+          z-index: 2;
         }
         
         @media (max-width: 768px) {
@@ -405,6 +450,15 @@
             left: 10px;
             right: 10px;
             max-width: none;
+          }
+          
+          .cs-chat-window.maximized {
+            top: 5px;
+            left: 5px;
+            right: 5px;
+            bottom: 5px;
+            width: calc(100% - 10px) !important;
+            height: calc(100% - 10px) !important;
           }
         }
       `;
@@ -555,11 +609,42 @@
         this.inputField.focus();
       } else {
         this.chatWindow.classList.remove('active');
+        
+        // Nếu đã maximized, thu nhỏ về kích thước ban đầu trước khi ẩn
+        if (this.isMaximized) {
+          this.isMaximized = false;
+          this.chatWindow.classList.remove('maximized');
+          
+          // Cập nhật icon
+          const maximizeButton = this.chatWindow.querySelector('.cs-maximize-button');
+          maximizeButton.innerHTML = '⛶';
+          maximizeButton.setAttribute('title', 'Phóng to');
+        }
       }
     }
     
     toggleMaximize() {
       this.isMaximized = !this.isMaximized;
+      
+      // Thêm/xóa class có animation mượt từ gốc
+      if (this.isMaximized) {
+        // Tạo hiệu ứng mượt từ góc phải dưới
+        const buttonRect = this.chatButton.getBoundingClientRect();
+        const originX = this.config.position.includes('right') ? 
+          (window.innerWidth - buttonRect.right + buttonRect.width/2) : 
+          (buttonRect.left + buttonRect.width/2);
+        
+        const originY = this.config.position.includes('bottom') ? 
+          (window.innerHeight - buttonRect.top) : 
+          buttonRect.bottom;
+          
+        // Đặt transform-origin dựa trên vị trí của nút chat
+        this.chatWindow.style.transformOrigin = 
+          `${this.config.position.includes('right') ? 'right' : 'left'} 
+           ${this.config.position.includes('bottom') ? 'bottom' : 'top'}`;
+      }
+      
+      // Thêm/xóa class maximized
       this.chatWindow.classList.toggle('maximized', this.isMaximized);
       
       // Thay đổi icon tùy theo trạng thái
@@ -749,7 +834,7 @@
           console.error("Error calling Chat API:", error);
           throw error; // Ném lỗi để xử lý ở nơi gọi hàm
       }
-  }
+    }
     
     // Phương thức để thiết lập hoặc cập nhật userId
     setUserId(userId, userInfo = null) {
@@ -767,6 +852,34 @@
       // Thêm lại tin nhắn chào mừng
       if (this.config.initialMessage) {
         this.addMessage(this.config.initialMessage, 'bot');
+      }
+    }
+    
+    // Phương thức cập nhật giao diện
+    updateTheme(options = {}) {
+      // Cập nhật các tùy chọn màu sắc
+      if (options.primaryColor) this.config.primaryColor = options.primaryColor;
+      if (options.primaryHoverColor) this.config.primaryHoverColor = options.primaryHoverColor;
+      if (options.backgroundColor) this.config.backgroundColor = options.backgroundColor;
+      if (options.cardBackgroundColor) this.config.cardBackgroundColor = options.cardBackgroundColor;
+      if (options.textColor) this.config.textColor = options.textColor;
+      if (options.secondaryColor) this.config.secondaryColor = options.secondaryColor;
+      if (options.borderColor) this.config.borderColor = options.borderColor;
+      if (options.logoUrl) this.config.logoUrl = options.logoUrl;
+      
+      // Cập nhật lại CSS
+      this.injectStyles();
+      
+      // Cập nhật lại logo nếu cần
+      if (options.logoUrl) {
+        // Cập nhật background image của messages container
+        if (this.messagesContainer) {
+          this.messagesContainer.style.backgroundImage = `url(${options.logoUrl})`;
+          this.messagesContainer.style.backgroundPosition = 'center';
+          this.messagesContainer.style.backgroundRepeat = 'no-repeat';
+          this.messagesContainer.style.backgroundSize = '40%';
+          this.messagesContainer.style.backgroundOpacity = '0.05';
+        }
       }
     }
   }

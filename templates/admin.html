@@ -162,7 +162,7 @@
                             </svg>
                         </button></pre>
                         
-                        <h3>2. Khởi tạo widget</h3>
+                        <h3>2. Khởi tạo widget cơ bản</h3>
                         <pre><code>&lt;script&gt;
 const chatbot = window.initCodeSupporter({
     apiUrl: '{{ request.url_root }}api/chat/public',
@@ -180,8 +180,54 @@ const chatbot = window.initCodeSupporter({
                             </svg>
                         </button></pre>
                         
+                        <h3>3. Tùy chỉnh màu sắc và giao diện</h3>
+                        <p>Code Supporter Widget mới hỗ trợ tùy chỉnh toàn diện về màu sắc và thêm logo riêng:</p>
+                        <pre><code>&lt;script&gt;
+const chatbot = window.initCodeSupporter({
+    apiUrl: '{{ request.url_root }}api/chat/public',
+    apiKey: 'YOUR_API_KEY_HERE',
+    position: 'bottom-right',
+    theme: 'dark',
+    chatTitle: 'Code Supporter',
+    initialMessage: 'Xin chào! Tôi có thể giúp gì cho bạn?',
+    
+    // Tùy chỉnh màu sắc
+    primaryColor: '#FF5000',      // Lava orange - màu chính
+    primaryHoverColor: '#FF6A00', // Màu hover
+    backgroundColor: '#101010',   // Màu nền chính
+    cardBackgroundColor: '#1A1A1A', // Màu nền thứ cấp
+    textColor: '#FFFFFF',         // Màu chữ
+    secondaryColor: '#FF7800',    // Màu phụ
+    borderColor: '#333333',       // Màu viền
+    
+    // Thêm logo watermark (tùy chọn)
+    logoUrl: 'https://example.com/your-logo.png'
+});
+&lt;/script&gt;</code>
+                        <button class="copy-button">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                            </svg>
+                        </button></pre>
+
+                        <h3>4. Cập nhật giao diện động</h3>
+                        <p>Bạn có thể thay đổi giao diện của chatbot sau khi đã khởi tạo:</p>
+                        <pre><code>// Cập nhật màu sắc hoặc logo sau khi khởi tạo
+chatbot.updateTheme({
+    primaryColor: '#0088FF', // Chuyển sang màu xanh
+    logoUrl: 'https://example.com/new-logo.png'
+});
+</code>
+                        <button class="copy-button">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                            </svg>
+                        </button></pre>
+                        
                         <!-- Thêm ví dụ đã điền API Key -->
-                        <h3>3. Cách sử dụng API Key của bạn</h3>
+                        <h3>5. Cách sử dụng API Key của bạn</h3>
                         <p>Sao chép API Key ở trên và thay thế 'YOUR_API_KEY_HERE' trong mã khởi tạo widget. Ví dụ:</p>
                         <pre><code>// Giả sử API Key của bạn là: 36e22eb0-e1ad-44f0-a387-a408251cdbf2
 const chatbot = window.initCodeSupporter({
@@ -190,13 +236,42 @@ const chatbot = window.initCodeSupporter({
     position: 'bottom-right',
     theme: 'dark',
     chatTitle: 'Code Supporter',
-    initialMessage: 'Xin chào! Tôi có thể giúp gì cho bạn với bài tập lập trình?'
+    
+    // Sử dụng màu lava mặc định
+    primaryColor: '#FF5000', 
+    backgroundColor: '#101010'
 });
 </code></pre>
 
                         <!-- Thêm phần theo dõi người dùng -->
-                        <h3>4. Theo dõi người dùng (Tùy chọn)</h3>
-                        <p>Nếu bạn muốn theo dõi người dùng đang sử dụng chatbot, hãy thêm tham số <code>user_id</code> và <code>user_info</code> khi gửi yêu cầu:</p>
+                        <h3>6. Theo dõi người dùng (Tùy chọn)</h3>
+                        <p>Nếu bạn muốn theo dõi người dùng đang sử dụng chatbot, hãy thêm tham số <code>user_id</code> và <code>user_info</code>:</p>
+                        <pre><code>// Khởi tạo với thông tin người dùng
+const chatbot = window.initCodeSupporter({
+    apiUrl: '{{ request.url_root }}api/chat/public',
+    apiKey: 'YOUR_API_KEY_HERE',
+    position: 'bottom-right',
+    theme: 'dark',
+    
+    // Thông tin người dùng
+    userId: 'user123',  // ID của người dùng từ hệ thống của bạn
+    userInfo: {
+        name: "Nguyễn Văn A",
+        email: "nguyenvana@example.com",
+        role: "student"
+    }
+});
+
+// Hoặc cập nhật thông tin người dùng sau khi đăng nhập
+chatbot.setUserId('user456', {
+    name: "Trần Thị B",
+    email: "tranthib@example.com",
+    role: "student"
+});
+</code></pre>
+
+                        <h3>7. Sử dụng API trực tiếp</h3>
+                        <p>Nếu bạn muốn tùy chỉnh giao diện hoàn toàn, bạn có thể gọi API trực tiếp:</p>
                         <pre><code>// Sử dụng API trực tiếp để thêm thông tin người dùng
 fetch('{{ request.url_root }}api/chat/public', {
     method: 'POST',
